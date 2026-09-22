@@ -6,8 +6,8 @@
 /** API 基础路径（开发环境通过 Vite 代理到后端） */
 export const API_BASE_URL: string = import.meta.env.VITE_APP_BASE_API || '/api'
 
-/** 站点 Logo 图片地址（品牌标识，登录页/侧边栏统一引用） */
-export const LOGO_URL = 'https://i.111666.best/image/dnZdw3oENzwBkiu2fjlW0N.jpg'
+/** 站点 Logo 图片地址（品牌标识，登录页/侧边栏统一引用；打包在 public/ 下随前端一起分发） */
+export const LOGO_URL = '/logo.jpg'
 
 /** localStorage 存储键位（与旧版前端保持一致，便于平滑迁移） */
 export const STORAGE_KEYS = {
