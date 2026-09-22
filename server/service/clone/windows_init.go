@@ -489,6 +489,9 @@ func cloneWindows(ctx context.Context, params *CloneParams, cloneDisk string, ra
 		return err
 	}
 
+	// UEFI 显卡修复：OVMF 无法驱动 virtio 显卡，UEFI 下将 virtio 显卡改用 bochs 避免黑屏
+	vmXML = vm_xml.ApplyUEFIVideoModelWorkaround(vmXML)
+
 	if _, err := libvirt_rpc.DefineDomainXMLRPC(vmXML); err != nil {
 		return fmt.Errorf("定义虚拟机失败: %w", err)
 	}

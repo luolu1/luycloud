@@ -365,6 +365,12 @@ chmod +x "$RELEASE_DIR/${OUTPUT_NAME}/install.sh"
 cp "$SCRIPT_DIR/scripts/check-system-compatibility.sh" "$RELEASE_DIR/${OUTPUT_NAME}/"
 chmod +x "$RELEASE_DIR/${OUTPUT_NAME}/check-system-compatibility.sh"
 
+# 复制面板管理脚本（账户与安全设置：重置密码、清除 2FA、改端口、公网开关等）
+if [ -f "$SCRIPT_DIR/qvmc-manage.sh" ]; then
+    cp "$SCRIPT_DIR/qvmc-manage.sh" "$RELEASE_DIR/${OUTPUT_NAME}/"
+    chmod +x "$RELEASE_DIR/${OUTPUT_NAME}/qvmc-manage.sh"
+fi
+
 # 设置后端二进制可执行权限
 if [ -f "$RELEASE_DIR/${OUTPUT_NAME}/kvm-console" ]; then
     chmod +x "$RELEASE_DIR/${OUTPUT_NAME}/kvm-console"

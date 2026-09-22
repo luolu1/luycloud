@@ -23,6 +23,9 @@ SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 ENV_FILE="${INSTALL_DIR}/.env"
 INSTALL_LAUNCH_DIR="$PWD"
 COMPATIBILITY_CHECK_SCRIPT="check-system-compatibility.sh"
+# 面板管理脚本（账户与安全设置）文件名与快捷命令名
+MANAGE_SCRIPT="qvmc-manage.sh"
+MANAGE_COMMAND="luycloud-manage"
 # 首次安装兼容性脚本下载地址，发布前填入正式地址。
 COMPATIBILITY_CHECK_URL="https://download.xiaozhuhouses.asia/download/v1/links/qhnoBKgQhgqxdXFxnZIW95hjerBS3L7HBUAo0GNg8Do"
 COMPATIBILITY_REPORT_DIR="${INSTALL_DIR}/logs/compatibility"
@@ -2027,6 +2030,13 @@ install_files() {
         install -m 700 "${RELEASE_SOURCE_DIR}/${COMPATIBILITY_CHECK_SCRIPT}" \
             "${INSTALL_DIR}/scripts/${COMPATIBILITY_CHECK_SCRIPT}"
     fi
+
+    # 部署面板管理脚本（账户与安全设置），并在 /usr/local/bin 建立 luycloud-manage 快捷入口
+    if [ -f "${RELEASE_SOURCE_DIR}/${MANAGE_SCRIPT}" ]; then
+        install -m 700 "${RELEASE_SOURCE_DIR}/${MANAGE_SCRIPT}" \
+            "${INSTALL_DIR}/${MANAGE_SCRIPT}"
+        ln -sf "${INSTALL_DIR}/${MANAGE_SCRIPT}" "/usr/local/bin/${MANAGE_COMMAND}"
+    fi
     success "程序文件已安装"
 }
 
@@ -2326,12 +2336,14 @@ uninstall_app() {
 
     read -rp "是否删除安装目录 ${INSTALL_DIR}（包含数据库和配置）? [y/N]: " purge
     purge=${purge:-N}
+    rm -f "/usr/local/bin/${MANAGE_COMMAND}"
     if [[ "$purge" =~ ^[Yy]$ ]]; then
         rm -rf "$INSTALL_DIR"
         success "安装目录已删除"
     else
         rm -f "${INSTALL_DIR}/kvm-console"
         rm -f "${INSTALL_DIR}/kvm-console-native" "${INSTALL_DIR}/kvm-console-compat"
+        rm -f "${INSTALL_DIR}/${MANAGE_SCRIPT}"
         rm -f "${INSTALL_DIR}/scripts/${COMPATIBILITY_CHECK_SCRIPT}"
         rmdir "${INSTALL_DIR}/scripts" 2>/dev/null || true
         rm -rf "${INSTALL_DIR}/web-dist"

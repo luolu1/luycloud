@@ -611,6 +611,9 @@ func CreateVM(params *CreateVMParams, progressFn func(int, string)) (string, err
 		return "", err
 	}
 
+	// UEFI 显卡修复：OVMF 无法驱动 virtio 显卡，UEFI 下将 virtio 显卡改用 bochs 避免黑屏
+	vmXML = vm_xml.ApplyUEFIVideoModelWorkaround(vmXML)
+
 	// 写入临时文件并定义虚拟机
 	xmlPath := fmt.Sprintf("/tmp/_vm-create-%s.xml", params.Name)
 	if err := os.WriteFile(xmlPath, []byte(vmXML), 0644); err != nil {

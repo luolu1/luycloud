@@ -16,12 +16,13 @@ const (
 )
 
 var (
-	vmVideoBlockRegexp       = regexp.MustCompile(`(?s)<video>.*?</video>`)
-	vmVideoModelRegexp       = regexp.MustCompile(`<video\b[^>]*>\s*<model\b[^>]*type=['"]([^'"]+)['"]`)
-	vmHyperVBlockRegexp      = regexp.MustCompile(`(?s)<hyperv\b[^>]*>.*?</hyperv>`)
-	vmClockBlockRegexp       = regexp.MustCompile(`(?s)<clock\b[^>]*(?:/>|>.*?</clock>)`)
-	vmSelfClosingClockRegexp = regexp.MustCompile(`^<clock\b[^>]*/>$`)
-	vmHyperVClockTimerRegexp = regexp.MustCompile(`<timer\b[^>]*\bname=['"]hypervclock['"][^>]*/>`)
+	vmVideoBlockRegexp        = regexp.MustCompile(`(?s)<video>.*?</video>`)
+	vmVideoModelRegexp        = regexp.MustCompile(`<video\b[^>]*>\s*<model\b[^>]*type=['"]([^'"]+)['"]`)
+	vmVideoModelReplaceRegexp = regexp.MustCompile(`<model\b[^>]*\btype=['"][^'"]+['"]`)
+	vmHyperVBlockRegexp       = regexp.MustCompile(`(?s)<hyperv\b[^>]*>.*?</hyperv>`)
+	vmClockBlockRegexp        = regexp.MustCompile(`(?s)<clock\b[^>]*(?:/>|>.*?</clock>)`)
+	vmSelfClosingClockRegexp  = regexp.MustCompile(`^<clock\b[^>]*/>$`)
+	vmHyperVClockTimerRegexp  = regexp.MustCompile(`<timer\b[^>]*\bname=['"]hypervclock['"][^>]*/>`)
 )
 
 // ResolveVMVideoModel 规范化视频模型，并根据系统类型和架构给出默认值。
@@ -171,6 +172,35 @@ func ApplyWindowsGuestOptimizationsToDomainXML(xmlStr string) string {
 // removeHyperVClockTimer 从 XML 中移除 hypervclock 定时器
 func removeHyperVClockTimer(xmlStr string) string {
 	return vmHyperVClockTimerRegexp.ReplaceAllString(xmlStr, "")
+}
+
+// ApplyUEFIVideoModelWorkaround 修复 UEFI 引导下 virtio 显卡黑屏问题。
+//
+// OVMF/edk2 固件的 QemuVideoDxe 只支持 VGA 类显卡（std VGA/bochs/qxl/cirrus/vmware），
+// 不包含 virtio-gpu 的 GOP 驱动，因此 UEFI 固件阶段无法为 virtio 显卡建立帧缓冲，
+// VNC 会一直提示 "Guest has not initialized the display (yet)."。
+// 当检测到 UEFI 引导（存在 pflash loader）且架构为 x86_64、且显卡为 virtio 时，
+// 自动改用 bochs（OVMF 明确支持，Linux 使用 bochs-drm 驱动，UEFI/BIOS 均可正常显示）。
+// 用户显式选择的 vga/qxl/cirrus 等 OVMF 可驱动的模型保持不变；BIOS 引导不受影响。
+func ApplyUEFIVideoModelWorkaround(xmlStr string) string {
+	// 仅 UEFI 引导需要处理（显式 pflash loader 或 firmware='efi'）
+	isUEFI := DomainUsesPflashNVRAM(xmlStr) ||
+		strings.Contains(xmlStr, "firmware='efi'") ||
+		strings.Contains(xmlStr, `firmware="efi"`)
+	if !isUEFI {
+		return xmlStr
+	}
+	// 仅 x86_64；ARM 默认 ramfb 由架构逻辑处理，不在此干预
+	if vmArch := ParseVMArchFromDomainXML(xmlStr); vmArch != "" && vmArch != "x86_64" {
+		return xmlStr
+	}
+	// 仅当显卡为 virtio 时替换为 bochs，其余模型（用户显式选择）保持不变
+	if ParseVMVideoModelFromDomainXML(xmlStr) != VMVideoModelVirtio {
+		return xmlStr
+	}
+	return vmVideoBlockRegexp.ReplaceAllStringFunc(xmlStr, func(videoBlock string) string {
+		return vmVideoModelReplaceRegexp.ReplaceAllString(videoBlock, "<model type='bochs'")
+	})
 }
 
 func leadingWhitespace(value string) string {

@@ -119,6 +119,9 @@ func importVMLinuxDefine(params *ImportVMParams, destDiskPath, format string, ra
 		return err
 	}
 
+	// UEFI 显卡修复：OVMF 无法驱动 virtio 显卡，UEFI 下将 virtio 显卡改用 bochs 避免黑屏
+	vmXML = vm_xml.ApplyUEFIVideoModelWorkaround(vmXML)
+
 	xmlPath := fmt.Sprintf("/tmp/_vm-import-%s.xml", params.Name)
 	if err := os.WriteFile(xmlPath, []byte(vmXML), 0644); err != nil {
 		_ = os.Remove(destDiskPath)
@@ -281,6 +284,9 @@ func importDiskByPathLinuxDefine(params *ImportDiskByPathParams, destDiskPath, f
 		_ = os.Remove(destDiskPath)
 		return err
 	}
+
+	// UEFI 显卡修复：OVMF 无法驱动 virtio 显卡，UEFI 下将 virtio 显卡改用 bochs 避免黑屏
+	vmXML = vm_xml.ApplyUEFIVideoModelWorkaround(vmXML)
 
 	xmlPath := fmt.Sprintf("/tmp/_vm-importd-%s.xml", params.Name)
 	if err := os.WriteFile(xmlPath, []byte(vmXML), 0644); err != nil {
