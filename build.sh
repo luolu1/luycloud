@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# QVMConsole 本地打包脚本
+# luycloud 本地打包脚本
 # 构建前端 + 后端，自动检测宿主机架构，支持原生/交叉编译
 # 产物: kvm-console-linux-{amd64|arm64}.tar.gz
 # ============================================================
@@ -180,7 +180,7 @@ COMPAT_ZIG_TARGET=$(get_compat_zig_target "$TARGET_ARCH" "$COMPAT_GLIBC_VERSION"
 
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║         QVMConsole 构建打包脚本                  ║${NC}"
+echo -e "${CYAN}║         luycloud 构建打包脚本                  ║${NC}"
 echo -e "${CYAN}╠══════════════════════════════════════════════════╣${NC}"
 echo -e "${CYAN}║${NC}  版本:   ${GREEN}${BUILD_VERSION}${NC}"
 echo -e "${CYAN}║${NC}  时间:   ${GREEN}${BUILD_TIME}${NC}"

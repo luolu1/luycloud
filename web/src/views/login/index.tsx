@@ -25,7 +25,7 @@ import { login, type LoginStageResponse } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import { useTheme } from '@/hooks/useTheme'
-import { LOGIN_STAGES, CLOUD_TYPES, type CloudType } from '@/config/constants'
+import { LOGIN_STAGES, CLOUD_TYPES, LOGO_URL, type CloudType } from '@/config/constants'
 import { applyDocumentTitle } from '@/config/site'
 import ForgotPasswordModal from './ForgotPasswordModal'
 import ForcePasswordModal from './ForcePasswordModal'
@@ -209,7 +209,7 @@ export default function LoginPage() {
       <section className="qvm-login-brand">
         <div className="qvm-brand-logo qvm-fade-up">
           <div className="qvm-logo-mark">
-            <img src="/favicon.png" alt="QVMConsole" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 13 }} />
+            <img src={LOGO_URL} alt="luycloud" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 13 }} />
           </div>
           <div>
             <div className="qvm-brand-logo-name">{siteTitle}</div>
@@ -290,7 +290,7 @@ export default function LoginPage() {
         <div className="qvm-login-card qvm-g-border qvm-fade-up" style={{ '--qvm-delay': '100ms' } as CSSProperties}>
           <div className="qvm-lc-head">
             <div className="qvm-lc-logo">
-              <img src="/favicon.png" alt="QVMConsole" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 15 }} />
+              <img src={LOGO_URL} alt="luycloud" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 15 }} />
             </div>
             <div className="qvm-lc-title">欢迎回来</div>
             <div className="qvm-lc-sub">登录 {siteTitle} 开源虚拟机管理控制台</div>
@@ -391,7 +391,7 @@ export default function LoginPage() {
         />
 
         <div className="qvm-login-foot">
-          <a href="https://github.com/QVMConsole/QVMConsole" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/luolu1/luycloud" target="_blank" rel="noopener noreferrer">
             <IconGithubLogo />© {siteTitle} · Open source Apache 2.0
           </a>
         </div>

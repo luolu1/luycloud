@@ -569,7 +569,7 @@ func LoadVfioPciModule() *VfioLoadResult {
 	}
 
 	// 写入配置文件
-	content := "# QVMConsole auto-generated - vfio-pci for PCI passthrough\nvfio-pci\n"
+	content := "# luycloud auto-generated - vfio-pci for PCI passthrough\nvfio-pci\n"
 	if err := os.WriteFile(confPath, []byte(content), 0644); err != nil {
 		result.Message = "写入 " + confPath + " 失败: " + err.Error()
 		return result

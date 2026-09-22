@@ -4,7 +4,7 @@
 import { create } from 'zustand'
 import { STORAGE_KEYS, THEME_MODES, type ThemeMode } from '@/config/constants'
 
-export const DEFAULT_SITE_TITLE = 'QVMConsole'
+export const DEFAULT_SITE_TITLE = 'luycloud'
 
 interface AppState {
   /** 主题模式：浅色 / 深色 / 跟随系统 */

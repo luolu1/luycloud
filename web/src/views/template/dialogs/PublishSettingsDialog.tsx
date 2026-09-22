@@ -323,7 +323,7 @@ export default function PublishSettingsDialog({ node, onClose, onSaved }: Publis
           </Checkbox>
           {postBootBlocking && (
             <div className="qvm-form-tip warn">
-              启用后系统启动期间将显示「正在启动 QVM 初始化服务」，用户在此期间无法通过 SSH 登录
+              启用后系统启动期间将显示「正在启动 luycloud 初始化服务」，用户在此期间无法通过 SSH 登录
             </div>
           )}
         </div>

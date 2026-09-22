@@ -212,7 +212,7 @@ func buildNoCloudUserData(params *CloneParams) string {
 func buildPostBootBlockingScript(command string) string {
 	var sb strings.Builder
 	sb.WriteString("#!/bin/bash\n")
-	sb.WriteString("# QVMConsole 阻塞式启动后命令 - 仅首次启动时执行\n")
+	sb.WriteString("# luycloud 阻塞式启动后命令 - 仅首次启动时执行\n")
 	sb.WriteString("# 此服务在 SSH 启动前运行，阻塞系统启动直到命令完成\n\n")
 	// 执行用户自定义命令
 	for _, line := range strings.Split(command, "\n") {

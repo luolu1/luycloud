@@ -29,8 +29,8 @@ const techStack = [
 
 /** 项目信息条目 */
 const projectLinks = [
-  { label: '开源地址', text: 'https://github.com/QVMConsole/QVMConsole', url: 'https://github.com/QVMConsole/QVMConsole' },
-  { label: '项目官网', text: 'https://www.qvmconsole.cn/', url: 'https://www.qvmconsole.cn/' },
+  { label: '开源地址', text: 'https://github.com/luolu1/luycloud', url: 'https://github.com/luolu1/luycloud' },
+  { label: '项目官网', text: 'https://github.com/luolu1/luycloud', url: 'https://github.com/luolu1/luycloud' },
   { label: '项目文档', text: 'https://qvmcdocs.xiaozhuhouses.asia', url: 'https://qvmcdocs.xiaozhuhouses.asia' },
 ]
 
@@ -188,7 +188,7 @@ export default function AboutPage() {
       </Collapse>
 
       <Card className="about-footer-card">
-        <p className="about-footer">© {currentYear} QVMConsole. 基于 React + Semi Design + Go 构建</p>
+        <p className="about-footer">© {currentYear} luycloud. 基于 React + Semi Design + Go 构建</p>
       </Card>
     </div>
   )

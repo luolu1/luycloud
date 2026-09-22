@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# QVMConsole 安装环境实机兼容性测试入口。
+# luycloud 安装环境实机兼容性测试入口。
 
 set -Eeuo pipefail
 

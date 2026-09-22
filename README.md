@@ -1,4 +1,4 @@
-# QVMConsole - 开源虚拟机管理控制台
+# luycloud - 开源虚拟机管理控制台
 
 <div align="center">
 
@@ -6,18 +6,20 @@
 
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/qvmconsole/qvmconsole?style=social)](https://github.com/qvmconsole/qvmconsole)
-[![GitHub Forks](https://img.shields.io/github/forks/qvmconsole/qvmconsole?style=social)](https://github.com/qvmconsole/qvmconsole)
-[![GitHub Issues](https://img.shields.io/github/issues/qvmconsole/qvmconsole)](https://github.com/qvmconsole/qvmconsole/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/qvmconsole/qvmconsole)](https://github.com/qvmconsole/qvmconsole/pulls)
+[![GitHub Stars](https://img.shields.io/github/stars/luolu1/luycloud?style=social)](https://github.com/luolu1/luycloud)
+[![GitHub Forks](https://img.shields.io/github/forks/luolu1/luycloud?style=social)](https://github.com/luolu1/luycloud)
+[![GitHub Issues](https://img.shields.io/github/issues/luolu1/luycloud)](https://github.com/luolu1/luycloud/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/luolu1/luycloud)](https://github.com/luolu1/luycloud/pulls)
 
-[**官方网站**](https://www.qvmconsole.cn/) | [**文档站点**](https://qvmcdocs.xiaozhuhouses.asia/) | [**部署指南**](https://qvmcdocs.xiaozhuhouses.asia/docs/install/)
+[**项目仓库**](https://github.com/luolu1/luycloud) | [**问题反馈**](https://github.com/luolu1/luycloud/issues) | [**快速部署**](#快速部署)
 
 </div>
 
 ## 项目简介
 
-QVMConsole 是一个面向小型企业和个人私有云服务场景的开源虚拟机管理平台，基于 KVM/QEMU 虚拟化技术深度集成，提供从虚拟机生命周期管理、网络与存储编排、快照与克隆、防火墙与带宽治理，到 Web 控制台与 API 一体化交付的完整解决方案。
+luycloud 是一个面向小型企业和个人私有云服务场景的开源虚拟机管理平台，基于 KVM/QEMU 虚拟化技术深度集成，提供从虚拟机生命周期管理、网络与存储编排、快照与克隆、防火墙与带宽治理，到 Web 控制台与 API 一体化交付的完整解决方案。
+
+> luycloud 基于 QVMConsole 二次开发，去除了原版的部分限制，采用独立的品牌与部署方案，便于自由扩展与私有化部署。
 
 ### 核心价值
 
@@ -26,6 +28,71 @@ QVMConsole 是一个面向小型企业和个人私有云服务场景的开源虚
 - **模块化设计**：可插拔网络后端（如 Open vSwitch），适配多样化的网络拓扑与安全策略
 - **双入口架构**：Web 控制台与 RESTful API 兼顾自动化与人工运维效率
 - **可观测性**：任务队列与 SSE 机制实现长耗时操作的可观测与可中断，保障大规模并发下的稳定性
+
+## 快速部署
+
+luycloud 提供一键安装脚本，自动完成依赖安装（libvirt / qemu-kvm / Open vSwitch 等）、用户存储、systemd 服务注册与启动。
+
+### 方式一：使用发行包一键部署（推荐）
+
+```bash
+# 1. 下载并解压发行包（amd64 / arm64）
+tar -xzf luycloud-linux-amd64.tar.gz
+cd luycloud-linux-amd64
+
+# 2. 以 root 运行一键安装脚本
+sudo bash install.sh
+```
+
+脚本会依次执行：硬件虚拟化检测 → 依赖安装 → 用户存储初始化 → 网络地基（OVS/DHCP/转发）→ systemd 服务注册 → 启动服务。安装完成后终端会打印访问地址。
+
+- 访问地址：`http://<服务器IP>:8080`
+- 默认账号：`admin` / `admin123`（首次登录请立即修改）
+
+> 安装脚本为交互式，可按提示选择存储磁盘、容量、Web 端口、是否开启公网访问、是否运行兼容性实机测试。
+
+### 方式二：从源码构建
+
+需要 Go 1.27+ 与 Node.js 22+（Vite 8 / rolldown 要求 Node ≥ 20.19）。
+
+```bash
+# 构建前端 + 后端并生成发行包
+bash build.sh --variant native      # 使用宿主机原生编译
+# 或
+bash build.sh                       # 同时构建 zig 兼容版（需安装 zig）
+
+# 产物位于 release/luycloud-linux-<arch>.tar.gz
+# 解压后 sudo bash install.sh 即可部署
+```
+
+国内网络构建提示：Go 依赖可设 `GOPROXY=https://goproxy.cn,direct`；前端依赖需 Node ≥ 20.19 以正确安装 rolldown 原生绑定。
+
+### 开发模式
+
+```bash
+bash start-dev.sh
+# 后端 air 热重载 (:8080)，前端 vite (:5173)
+```
+
+### 常用运维命令
+
+```bash
+systemctl status kvm-console      # 查看服务状态
+journalctl -u kvm-console -f      # 查看实时日志
+systemctl restart kvm-console     # 重启服务
+sudo bash qvmc-manage.sh          # 账户与安全管理（重置密码、清除 2FA、改端口、公网开关等）
+```
+
+### 嵌套虚拟化环境部署说明
+
+当宿主机本身运行在虚拟机中（嵌套 KVM）时，`host-passthrough` 会让 QEMU 尝试设置 `MSR 0x345 (IA32_PERF_CAPABILITIES)` 而崩溃：
+
+```
+qemu-system-x86_64: error: failed to set MSR 0x345 to 0x2000
+kvm_buf_set_msrs: Assertion `ret == cpu->kvm_msr_buf->nmsrs' failed.
+```
+
+luycloud 会在检测到宿主机处于嵌套虚拟化环境（`/proc/cpuinfo` 含 `hypervisor` 标志）时，自动向虚拟机 domain XML 注入 `<pmu state='off'/>` 关闭 vPMU 规避该崩溃；此改动在裸金属宿主机上为无操作，不影响正常性能计数器功能。
 
 ## 核心功能
 
@@ -76,7 +143,7 @@ QVMConsole 是一个面向小型企业和个人私有云服务场景的开源虚
 ## 技术栈
 
 ### 后端
-- **语言**: Go 1.26.0
+- **语言**: Go 1.27+
 - **Web 框架**: Gin v1.12.0
 - **数据库**: SQLite + GORM v1.31.1
 - **虚拟化**: go-libvirt RPC
@@ -115,18 +182,14 @@ QVMConsole 是一个面向小型企业和个人私有云服务场景的开源虚
 - **依赖工具**: genisoimage（用于 Windows 虚拟机初始化）
 
 ### 开发贡献指南
-作为一个由独立开发者维护的大型开源项目，QVMConsole 需要社区贡献者的支持才能持续完善。我们欢迎并鼓励您使用 AI 等工具进行功能修复与开发，但请务必遵守以下准则：
+作为一个由独立开发者维护的大型开源项目，luycloud 需要社区贡献者的支持才能持续完善。我们欢迎并鼓励您使用 AI 等工具进行功能修复与开发，但请务必遵守以下准则：
 
 1. **规则遵守**：在使用 AI 工具时，必须将根目录的 `AGENTS.md` 文件作为核心提示词规则
-2. **功能边界**：开源版本中不得提交包含 Pro 版功能的代码。Pro 版功能清单详见：[赞助功能说明](https://qvmcdocs.xiaozhuhouses.asia/docs/install/sponsorship)
+2. **功能边界**：开源版本中不得提交包含 Pro 版功能的代码。Pro 版功能清单详见：[赞助功能说明](https://github.com/luolu1/luycloud)
 3. **场景通用性**：提交的功能应面向通用化使用场景，符合广大用户的需求。针对特定场景的定制功能建议自行 fork 仓库维护
 
 ### 安全漏洞报告
-如果您发现项目存在安全漏洞，无论严重程度如何，请勿在 GitHub Issues 中公开报告，以避免安全风险被恶意利用。
-
-**安全报告渠道**：
-- 作者QQ：3354416548
-- 电子邮件：xiaozhuhs@foxmail.com
+如果您发现项目存在安全漏洞，无论严重程度如何，请勿在 GitHub Issues 中公开报告，以避免安全风险被恶意利用。请通过仓库私有渠道联系维护者进行安全披露：[提交私密安全反馈](https://github.com/luolu1/luycloud/security)。
 
 ---
 
@@ -141,14 +204,14 @@ QVMConsole 是一个面向小型企业和个人私有云服务场景的开源虚
 
 ## 致谢
 
-感谢所有为 QVMConsole 做出贡献的开发者！
+感谢所有为 luycloud 做出贡献的开发者！
 
 ---
 
 <div align="center">
 
-**QVMConsole** - 让虚拟化管理更简单
+**luycloud** - 让虚拟化管理更简单
 
-[官方网站](https://www.qvmconsole.cn/) | [文档站点](https://qvmcdocs.xiaozhuhouses.asia/) | [部署指南](https://qvmcdocs.xiaozhuhouses.asia/docs/install/)
+[官方网站](https://github.com/luolu1/luycloud) | [文档站点](https://github.com/luolu1/luycloud) | [部署指南](https://github.com/luolu1/luycloud)
 
 </div>

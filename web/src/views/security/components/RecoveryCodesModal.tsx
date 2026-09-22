@@ -36,7 +36,7 @@ export default function RecoveryCodesModal({ visible, codes, onClose }: Recovery
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'qvmconsole-recovery-codes.txt'
+    a.download = 'luycloud-recovery-codes.txt'
     a.click()
     URL.revokeObjectURL(url)
   }

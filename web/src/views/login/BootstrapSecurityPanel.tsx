@@ -46,10 +46,10 @@ const SMTP_FORM_DEFAULTS = {
   smtp_port: 587,
   smtp_username: '',
   smtp_password: '',
-  smtp_from_name: 'QVMConsole',
-  smtp_from_address: '',
-  smtp_security: 'starttls',
-  smtp_timeout_seconds: 15,
+    smtp_from_name: 'luycloud',
+    smtp_from_address: '',
+    smtp_security: 'starttls',
+    smtp_timeout_seconds: 15,
 }
 
 const SMTP_SECURITY_OPTIONS = [
@@ -106,7 +106,7 @@ export default function BootstrapSecurityPanel({
         smtp_port: (data.smtp_port as number) || 587,
         smtp_username: (data.smtp_username as string) || '',
         smtp_password: '',
-        smtp_from_name: (data.smtp_from_name as string) || 'QVMConsole',
+        smtp_from_name: (data.smtp_from_name as string) || 'luycloud',
         smtp_from_address: (data.smtp_from_address as string) || '',
         smtp_security: (data.smtp_security as string) || 'starttls',
         smtp_timeout_seconds: (data.smtp_timeout_seconds as number) || 15,
@@ -310,7 +310,7 @@ export default function BootstrapSecurityPanel({
       style={{ '--qvm-delay': '60ms' } as CSSProperties}
     >
       <div className="qvm-lc-head">
-        <div className="qvm-lc-logo">Q</div>
+        <div className="qvm-lc-logo">L</div>
         <div className="qvm-lc-title">安全初始化</div>
         <div className="qvm-lc-sub">
           账户 {stage.username} 需先完成必要的安全配置

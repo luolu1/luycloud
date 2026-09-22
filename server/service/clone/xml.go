@@ -242,6 +242,12 @@ func defineAndStartNonWindowsClone(params *CloneParams, cloneDisk string, ramMB 
 		}
 	}
 
+	// 嵌套宿主机规避：宿主机本身为虚拟机时关闭 vPMU，规避 QEMU 设置 MSR 0x345 崩溃
+	vmXML, err = vm_xml.ApplyNestedHostPMUWorkaround(vmXML)
+	if err != nil {
+		return err
+	}
+
 	if _, err := libvirt_rpc.DefineDomainXMLRPC(vmXML); err != nil {
 		return fmt.Errorf("定义虚拟机失败: %w", err)
 	}

@@ -27,6 +27,9 @@ var (
 	// <cpu ...> 块（自闭合或展开）
 	vmCPUSelfCloseBlockRegex = regexp.MustCompile(`<cpu\b[^>/]*/>`)
 	vmCPUBlockRegex          = regexp.MustCompile(`(?s)<cpu\b[^>]*>.*?</cpu>`)
+
+	// <pmu state='...'/>
+	vmPMURegexp = regexp.MustCompile(`<pmu\b[^>]*/>`)
 )
 
 // HasKVMFeatureValue 判断 KVM 特性配置是否有实际值
@@ -159,6 +162,70 @@ func readProcCPUInfo() (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+// HostIsNestedVirtualization 判断宿主机自身是否运行在虚拟化环境中（嵌套场景）。
+// /proc/cpuinfo 出现 hypervisor 标志说明宿主机本身是一台虚拟机，
+// 此时启用 vPMU 会导致 QEMU 设置 MSR 0x345 (IA32_PERF_CAPABILITIES) 失败而崩溃。
+func HostIsNestedVirtualization() bool {
+	data, err := readProcCPUInfo()
+	if err != nil {
+		return false
+	}
+	// cpuinfo flags 以空格分隔，hypervisor 位于 flags 行
+	return strings.Contains(data, " hypervisor ") || strings.Contains(data, " hypervisor\n") || strings.HasSuffix(strings.TrimSpace(data), " hypervisor")
+}
+
+// renderPMUOffBlock 生成 <pmu state='off'/>
+func renderPMUOffBlock() string { return "    <pmu state='off'/>" }
+
+// ApplyPMUToDomainXML 向 domain XML 的 <features> 注入/移除 <pmu state='off'/>。
+// disabled 为 nil 不修改；true 注入关闭 vPMU；false 移除该标志。
+func ApplyPMUToDomainXML(xmlStr string, disabled *bool) (string, error) {
+	if disabled == nil {
+		return xmlStr, nil
+	}
+	updated := vmPMURegexp.ReplaceAllString(xmlStr, "")
+	if !*disabled {
+		return updated, nil
+	}
+	block := renderPMUOffBlock()
+	if vmFeaturesBlockExprKVM.MatchString(updated) {
+		return vmFeaturesBlockExprKVM.ReplaceAllStringFunc(updated, func(featuresBlock string) string {
+			return strings.Replace(featuresBlock, "</features>", block+"\n  </features>", 1)
+		}), nil
+	}
+	featuresXML := "  <features>\n" + block + "\n  </features>\n"
+	switch {
+	case strings.Contains(updated, "<clock "):
+		return strings.Replace(updated, "<clock ", featuresXML+"  <clock ", 1), nil
+	case strings.Contains(updated, "<clock>"):
+		return strings.Replace(updated, "<clock>", featuresXML+"  <clock>", 1), nil
+	case strings.Contains(updated, "<devices/>"):
+		return strings.Replace(updated, "<devices/>", featuresXML+"  <devices/>", 1), nil
+	case strings.Contains(updated, "<devices />"):
+		return strings.Replace(updated, "<devices />", featuresXML+"  <devices />", 1), nil
+	case strings.Contains(updated, "<devices>"):
+		return strings.Replace(updated, "<devices>", featuresXML+"  <devices>", 1), nil
+	case strings.Contains(updated, "<on_poweroff>"):
+		return strings.Replace(updated, "<on_poweroff>", featuresXML+"  <on_poweroff>", 1), nil
+	default:
+		return "", fmt.Errorf("写入 pmu 标志失败：未找到可插入 features 的位置")
+	}
+}
+
+// ApplyNestedHostPMUWorkaround 在宿主机为嵌套虚拟化环境时，向 x86_64 domain XML
+// 注入 <pmu state='off'/>，规避 QEMU 设置 MSR 0x345 崩溃。非嵌套或非 x86_64 返回原样。
+func ApplyNestedHostPMUWorkaround(xmlStr string) (string, error) {
+	if !HostIsNestedVirtualization() {
+		return xmlStr, nil
+	}
+	arch := ParseVMArchFromDomainXML(xmlStr)
+	if arch != "" && arch != "x86_64" {
+		return xmlStr, nil
+	}
+	disabled := true
+	return ApplyPMUToDomainXML(xmlStr, &disabled)
 }
 
 // ApplyNestedVirtToDomainXML 向 domain XML 的 <cpu> 中注入嵌套虚拟化特性

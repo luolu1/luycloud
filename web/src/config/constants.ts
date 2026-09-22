@@ -6,6 +6,9 @@
 /** API 基础路径（开发环境通过 Vite 代理到后端） */
 export const API_BASE_URL: string = import.meta.env.VITE_APP_BASE_API || '/api'
 
+/** 站点 Logo 图片地址（品牌标识，登录页/侧边栏统一引用） */
+export const LOGO_URL = 'https://i.111666.best/image/dnZdw3oENzwBkiu2fjlW0N.jpg'
+
 /** localStorage 存储键位（与旧版前端保持一致，便于平滑迁移） */
 export const STORAGE_KEYS = {
   token: 'token',
@@ -23,11 +26,11 @@ export const STORAGE_KEYS = {
 /** 外部链接（开源仓库 / 赞助相关） */
 export const EXTERNAL_LINKS = {
   /** GitHub 开源仓库 */
-  github: 'https://github.com/QVMConsole/QVMConsole',
+  github: 'https://github.com/luolu1/luycloud',
   /** 爱发电赞助页 */
   sponsorPay: 'https://www.ifdian.net/item/ff67c598693811f1836452540025c377?utm_source=copylink&utm_medium=link',
   /** 赞助者权益说明文档 */
-  sponsorBenefits: 'https://qvmcdocs.xiaozhuhouses.asia/docs/install/sponsorship',
+  sponsorBenefits: 'https://github.com/luolu1/luycloud',
 } as const
 
 /** 云类型 */

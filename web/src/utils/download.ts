@@ -15,7 +15,7 @@ export function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-/** 生成带时间戳的导出文件名（如 qvmconsole-logs-2026-07-28T10-00-00.zip） */
+/** 生成带时间戳的导出文件名（如 luycloud-logs-2026-07-28T10-00-00.zip） */
 export function timestampFilename(prefix: string, ext: string): string {
   const dateStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   return `${prefix}-${dateStr}.${ext}`

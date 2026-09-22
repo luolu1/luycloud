@@ -34,7 +34,7 @@ export default function DiagnosticsTab() {
     setExporting(true)
     try {
       const res = await exportDiagnostics({ categories: selected })
-      downloadBlob(res.data, timestampFilename('qvmconsole-diagnostics', 'zip'))
+      downloadBlob(res.data, timestampFilename('luycloud-diagnostics', 'zip'))
       Toast.success('诊断信息导出成功')
     } catch {
       // 请求层已统一提示

@@ -362,6 +362,13 @@ func LinkedCloneVM(ctx context.Context, params *LinkedCloneParams, progressFn fu
 		}
 	}
 
+	// 嵌套宿主机规避：宿主机本身为虚拟机时关闭 vPMU，规避 QEMU 设置 MSR 0x345 崩溃
+	vmXML, err = vm_xml.ApplyNestedHostPMUWorkaround(vmXML)
+	if err != nil {
+		cleanupLinkedCloneArtifacts("", cloneDisk)
+		return nil, err
+	}
+
 	// 定义虚拟机（直接通过 RPC，无需临时文件）
 	if _, err := libvirt_rpc.DefineDomainXMLRPC(vmXML); err != nil {
 		cleanupLinkedCloneArtifacts("", cloneDisk)

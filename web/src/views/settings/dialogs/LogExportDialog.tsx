@@ -38,7 +38,7 @@ export default function LogExportDialog({
     setExporting(true)
     try {
       const res = await exportLogs({ files: selected })
-      downloadBlob(res.data, timestampFilename('qvmconsole-logs', 'zip'))
+      downloadBlob(res.data, timestampFilename('luycloud-logs', 'zip'))
       Toast.success('日志导出成功')
       onClose()
     } catch {

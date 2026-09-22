@@ -88,7 +88,7 @@ func regenerateSSHDenyConfig() error {
 			denyList = append(denyList, u.Username)
 		}
 
-		config := fmt.Sprintf("# 由 QVMConsole 自动生成 - 请勿手动编辑\n# 禁止面板用户通过 SSH 登录\nDenyUsers %s\n",
+		config := fmt.Sprintf("# 由 luycloud 自动生成 - 请勿手动编辑\n# 禁止面板用户通过 SSH 登录\nDenyUsers %s\n",
 			strings.Join(denyList, " "))
 
 		// 确保 sshd_config.d 目录存在

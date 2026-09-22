@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# QVMConsole 安装 / 更新 / 卸载脚本
+# luycloud 安装 / 更新 / 卸载脚本
 # ============================================================
 
 set -Eeuo pipefail
@@ -16,7 +16,7 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; }
 success() { echo -e "${GREEN}[✓]${NC} $1"; }
 
-APP_NAME="QVMConsole"
+APP_NAME="luycloud"
 INSTALL_DIR="/opt/kvm-console"
 SERVICE_NAME="kvm-console"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
@@ -391,7 +391,7 @@ check_locale() {
 
 当前检测到: LANG=${lang:-（空）}${lc_all:+ , LC_ALL=${lc_all}}
 
-QVMConsole 大部分功能依赖命令返回的信息进行正确识别，
+luycloud 大部分功能依赖命令返回的信息进行正确识别，
 非英文环境下可能导致错误匹配逻辑失效。造成功能异常
 
 请将系统语言环境设置为 en_US.UTF-8 后重启系统再执行安装，例如：
@@ -1074,7 +1074,7 @@ choose_storage_image_location() {
 }
 
 ensure_storage_fstab() {
-    local expected_entry="${STORAGE_IMG} ${STORAGE_MOUNT} ext4 loop,prjquota 0 0"
+    local expected_entry="${STORAGE_IMG} ${STORAGE_MOUNT} ext4 ${STORAGE_MOUNT_OPTS:-loop,prjquota} 0 0"
     local temporary_fstab
 
     touch /etc/fstab
@@ -1091,10 +1091,42 @@ ensure_storage_fstab() {
     success "已更新用户存储挂载配置到 /etc/fstab"
 }
 
+detect_prjquota_support() {
+    # 部分内核（如精简版 5.15 云镜像）未提供 quota_tree/quota_v2 模块，
+    # 导致 ext4 prjquota 挂载失败（mount err=-3）。此处探测实际支持情况。
+    # 结果写入全局 STORAGE_MOUNT_OPTS：支持时使用 loop,prjquota，否则回退 loop。
+    if [ -n "${STORAGE_MOUNT_OPTS:-}" ]; then
+        return
+    fi
+
+    modprobe quota_v2 2>/dev/null || true
+    modprobe quota_tree 2>/dev/null || true
+
+    local probe_img probe_mnt probe_loop
+    probe_img=$(mktemp /tmp/kvm-prjquota-probe.XXXXXX.img)
+    probe_mnt=$(mktemp -d)
+    truncate -s 32M "$probe_img" 2>/dev/null
+    if mkfs.ext4 -q -O project,quota "$probe_img" 2>/dev/null \
+        && mount -o loop,prjquota "$probe_img" "$probe_mnt" 2>/dev/null; then
+        STORAGE_MOUNT_OPTS="loop,prjquota"
+        umount "$probe_mnt" 2>/dev/null || true
+        info "内核支持 ext4 project quota，用户存储将启用配额"
+    else
+        STORAGE_MOUNT_OPTS="loop"
+        probe_loop=$(losetup -j "$probe_img" 2>/dev/null | cut -d: -f1)
+        [ -n "$probe_loop" ] && losetup -d "$probe_loop" 2>/dev/null || true
+        warn "当前内核未提供 ext4 project quota 支持（缺少 quota_tree/quota_v2 模块）"
+        warn "用户存储将以普通模式挂载，"我的存储"容量配额在本机不会被强制限制"
+    fi
+    rmdir "$probe_mnt" 2>/dev/null || true
+    rm -f "$probe_img" 2>/dev/null || true
+}
+
 setup_quota() {
     info "检查用户存储 Project Quota 文件系统..."
     mkdir -p "$STORAGE_MOUNT"
     touch /etc/projects /etc/projid
+    detect_prjquota_support
 
     if load_existing_storage_image; then
         info "检测到已有用户存储镜像: $STORAGE_IMG"
@@ -1111,7 +1143,7 @@ setup_quota() {
 
     if [ -f "$STORAGE_IMG" ]; then
         info "检测到已有用户存储镜像，正在挂载..."
-        if mount -o loop,prjquota "$STORAGE_IMG" "$STORAGE_MOUNT" 2>/dev/null; then
+        if mount -o "${STORAGE_MOUNT_OPTS}" "$STORAGE_IMG" "$STORAGE_MOUNT" 2>/dev/null; then
             quotaon -P "$STORAGE_MOUNT" 2>/dev/null || true
             ensure_storage_fstab
             success "用户存储文件系统已挂载"
@@ -1160,11 +1192,21 @@ setup_quota() {
     info "创建用户存储镜像: $STORAGE_IMG ($storage_size)"
     # 使用 truncate 创建稀疏镜像文件，大小格式已在上方循环中校验
     truncate -s "$storage_size" "$STORAGE_IMG"
-    mkfs.ext4 -q -O project,quota "$STORAGE_IMG"
-    mount -o loop,prjquota "$STORAGE_IMG" "$STORAGE_MOUNT"
+    # 仅在内核支持 project quota 时启用 quota 特性；否则创建普通 ext4，
+    # 避免 quota 特性导致 mount 时 ext4 强制启用配额跟踪而失败（err=-3）。
+    if [ "${STORAGE_MOUNT_OPTS}" = "loop,prjquota" ]; then
+        mkfs.ext4 -q -O project,quota "$STORAGE_IMG"
+    else
+        mkfs.ext4 -q "$STORAGE_IMG"
+    fi
+    mount -o "${STORAGE_MOUNT_OPTS}" "$STORAGE_IMG" "$STORAGE_MOUNT"
     quotaon -P "$STORAGE_MOUNT" 2>/dev/null || true
     ensure_storage_fstab
-    success "用户存储 Project Quota 文件系统已创建"
+    if [ "${STORAGE_MOUNT_OPTS}" = "loop,prjquota" ]; then
+        success "用户存储 Project Quota 文件系统已创建"
+    else
+        success "用户存储文件系统已创建（普通模式，无配额强制）"
+    fi
 }
 
 env_get() {
@@ -1429,7 +1471,7 @@ write_env() {
         env_default "KVM_PORT_SECURITY_RECONCILE_INTERVAL_SECONDS" "60"
         env_default "KVM_RESCUE_ISO" ""
         env_default "KVM_PUBLIC_BASE_URL" ""
-        env_default "KVM_SITE_TITLE" "QVMConsole"
+        env_default "KVM_SITE_TITLE" "luycloud"
         env_default "KVM_DEVELOPMENT_MODE" "false"
         env_default "KVM_MAINTENANCE_MODE" "false"
         env_default "KVM_MAINTENANCE_SERVICE_UNITS" "kvm-console.service,libvirtd.service,libvirtd.socket,libvirtd-ro.socket,libvirtd-admin.socket"
@@ -1437,7 +1479,7 @@ write_env() {
         env_default "KVM_SMTP_HOST" ""
         env_default "KVM_SMTP_PORT" "587"
         env_default "KVM_SMTP_USERNAME" ""
-        env_default "KVM_SMTP_FROM_NAME" "QVMConsole"
+        env_default "KVM_SMTP_FROM_NAME" "luycloud"
         env_default "KVM_SMTP_FROM_ADDRESS" ""
         env_default "KVM_SMTP_SECURITY" "starttls"
         env_default "KVM_SMTP_TIMEOUT_SECONDS" "15"

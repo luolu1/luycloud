@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================================
-# QVMConsole 管理脚本 (qvmc-manage)
-# 用于直接在服务器上管理 QVMConsole 的账户与安全设置
+# luycloud 管理脚本 (qvmc-manage)
+# 用于直接在服务器上管理 luycloud 的账户与安全设置
 # =============================================================================
 set -euo pipefail
 
@@ -189,7 +189,7 @@ status, count = "ok", 0
 try:
     req = urllib.request.Request(
         "https://api.pwnedpasswords.com/range/" + prefix,
-        headers={"User-Agent": "QVMConsole-Manage-PasswordCheck"},
+        headers={"User-Agent": "luycloud-Manage-PasswordCheck"},
     )
     with urllib.request.urlopen(req, timeout=5) as response:
         for raw_line in response.read().decode("utf-8", "replace").splitlines():
@@ -226,7 +226,7 @@ check_deps() {
 check_db() {
     if [ ! -f "$DB_PATH" ]; then
         echo -e "${RED}错误: 数据库文件不存在: ${DB_PATH}${NC}"
-        echo -e "${YELLOW}提示: 请确认 QVMConsole 已至少启动过一次，或设置 KVM_DB_PATH 环境变量${NC}"
+        echo -e "${YELLOW}提示: 请确认 luycloud 已至少启动过一次，或设置 KVM_DB_PATH 环境变量${NC}"
         exit 1
     fi
     if ! sqlite3 "$DB_PATH" "SELECT 1;" &>/dev/null; then
@@ -887,7 +887,7 @@ show_menu() {
     clear
     echo ""
     echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${CYAN}║       QVMConsole 管理工具 v1.0              ║${NC}"
+    echo -e "${BOLD}${CYAN}║       luycloud 管理工具 v1.0              ║${NC}"
     echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════╝${NC}"
     echo ""
     echo -e "  项目目录: ${CYAN}${PROJECT_DIR}${NC}"

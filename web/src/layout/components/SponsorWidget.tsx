@@ -88,7 +88,7 @@ export default function SponsorWidget() {
 
       {/* 赞助支持弹窗 */}
       <Modal
-        title="🤝 赞助支持 QVMConsole"
+        title="🤝 赞助支持 luycloud"
         visible={visible}
         width={480}
         closable={countdown <= 0}
@@ -110,9 +110,9 @@ export default function SponsorWidget() {
           <div className="qvm-sponsor-icon">
             <IconLikeHeart size="inherit" />
           </div>
-          <h3 className="qvm-sponsor-title">喜欢 QVMConsole 吗？</h3>
+          <h3 className="qvm-sponsor-title">喜欢 luycloud 吗？</h3>
           <p className="qvm-sponsor-desc">
-            QVMConsole 是一个由个人开发者独立维护的开源 KVM 虚拟化管理面板。
+            luycloud 是一个由个人开发者独立维护的开源 KVM 虚拟化管理面板。
             如果你觉得这个项目对你有帮助，欢迎赞助支持，帮助项目持续发展！
           </p>
           <div className="qvm-sponsor-benefits">

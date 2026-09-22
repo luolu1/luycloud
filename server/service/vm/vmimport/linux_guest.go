@@ -112,6 +112,13 @@ func importVMLinuxDefine(params *ImportVMParams, destDiskPath, format string, ra
 		return err
 	}
 
+	// 嵌套宿主机规避：宿主机本身为虚拟机时关闭 vPMU，规避 QEMU 设置 MSR 0x345 崩溃
+	vmXML, err = vm_xml.ApplyNestedHostPMUWorkaround(vmXML)
+	if err != nil {
+		_ = os.Remove(destDiskPath)
+		return err
+	}
+
 	xmlPath := fmt.Sprintf("/tmp/_vm-import-%s.xml", params.Name)
 	if err := os.WriteFile(xmlPath, []byte(vmXML), 0644); err != nil {
 		_ = os.Remove(destDiskPath)
@@ -266,6 +273,13 @@ func importDiskByPathLinuxDefine(params *ImportDiskByPathParams, destDiskPath, f
 	if spiceEnabled {
 		vmXML = service.InjectSPICEGraphicsToDomainXML(vmXML, "", "127.0.0.1")
 		vmXML = service.EnsureQXLVideo(vmXML)
+	}
+
+	// 嵌套宿主机规避：宿主机本身为虚拟机时关闭 vPMU，规避 QEMU 设置 MSR 0x345 崩溃
+	vmXML, err = vm_xml.ApplyNestedHostPMUWorkaround(vmXML)
+	if err != nil {
+		_ = os.Remove(destDiskPath)
+		return err
 	}
 
 	xmlPath := fmt.Sprintf("/tmp/_vm-importd-%s.xml", params.Name)

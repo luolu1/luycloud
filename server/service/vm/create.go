@@ -604,6 +604,13 @@ func CreateVM(params *CreateVMParams, progressFn func(int, string)) (string, err
 		}
 	}
 
+	// 嵌套宿主机规避：宿主机本身为虚拟机时关闭 vPMU，规避 QEMU 设置 MSR 0x345 崩溃
+	vmXML, err = vm_xml.ApplyNestedHostPMUWorkaround(vmXML)
+	if err != nil {
+		_ = os.Remove(diskPath)
+		return "", err
+	}
+
 	// 写入临时文件并定义虚拟机
 	xmlPath := fmt.Sprintf("/tmp/_vm-create-%s.xml", params.Name)
 	if err := os.WriteFile(xmlPath, []byte(vmXML), 0644); err != nil {

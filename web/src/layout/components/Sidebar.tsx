@@ -13,7 +13,7 @@ import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import { useTaskStore } from '@/stores/task'
 import { getVmList, getSelfVMs, type VmListItem } from '@/api/vm'
-import { CLOUD_TYPES, ROLES } from '@/config/constants'
+import { CLOUD_TYPES, ROLES, LOGO_URL } from '@/config/constants'
 
 interface SidebarProps {
   mobileOpen: boolean
@@ -86,7 +86,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
       </Tooltip>
 
       <div className="qvm-logo-zone">
-        <img className="qvm-logo-img" src="/favicon.png" alt="QVMC" />
+        <img className="qvm-logo-img" src={LOGO_URL} alt="luycloud" />
         <div className="qvm-logo-txt">
           <div className="qvm-logo-name">{siteTitle}</div>
           <div className="qvm-logo-sub">KVM 虚拟化管理平台</div>
