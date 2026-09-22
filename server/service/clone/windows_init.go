@@ -301,11 +301,11 @@ func cloneWindows(ctx context.Context, params *CloneParams, cloneDisk string, ra
 		nvramClone = fmt.Sprintf("/var/lib/libvirt/qemu/nvram/%s_VARS.fd", params.Name)
 
 		if utils.FileExists(nvramTemplate) {
-			if err := vm_xml.CreateQCOW2NVRAMFromTemplate(nvramTemplate, nvramClone); err != nil {
+			if err := vm_xml.CreateNVRAMFromTemplate(nvramTemplate, nvramClone); err != nil {
 				return err
 			}
 		} else {
-			if err := vm_xml.CreateQCOW2NVRAMFromTemplate("/usr/share/OVMF/OVMF_VARS_4M.ms.fd", nvramClone); err != nil {
+			if err := vm_xml.CreateNVRAMFromTemplate("/usr/share/OVMF/OVMF_VARS_4M.ms.fd", nvramClone); err != nil {
 				return err
 			}
 		}
@@ -338,16 +338,18 @@ func cloneWindows(ctx context.Context, params *CloneParams, cloneDisk string, ra
 	smmXML := ""
 	tpmXML := ""
 	if needUEFI {
-		// 使用显式 loader/nvram 模式，不使用 firmware='efi' 自动选择，
-		// 避免 libvirt 自动填充 nvram format='raw' 与 qcow2 格式不匹配导致黑屏。
+		// 使用显式 loader/nvram 模式，不使用 firmware='efi' 自动选择。
+		// <nvram> 的 format/templateFormat 属性由 BuildNVRAMElementXML 按 libvirt 版本能力决定，
+		// 确保磁盘 NVRAM 真实格式与 libvirt 加载的 pflash 格式一致（否则 OVMF 读错变量存储会黑屏）。
 		loaderPath := vm_xml.ResolveOVMFLoaderPath(true)
 		varsTemplate := vm_xml.ResolveOVMFVarsTemplatePath(true)
+		nvramElement := strings.TrimLeft(vm_xml.BuildNVRAMElementXML(varsTemplate, nvramClone), " ")
 		osXML = fmt.Sprintf(`  <os>
     <type arch='%s' machine='%s'>hvm</type>
     <loader readonly='yes' secure='yes' type='pflash'>%s</loader>
-    <nvram template='%s' templateFormat='raw' format='qcow2'>%s</nvram>
+    %s
     <boot dev='hd'/>
-  </os>`, archName, machineType, loaderPath, varsTemplate, nvramClone)
+  </os>`, archName, machineType, loaderPath, nvramElement)
 		smmXML = "<smm state='on'/>"
 		tpmXML = "    <tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm>\n"
 	}
@@ -488,9 +490,6 @@ func cloneWindows(ctx context.Context, params *CloneParams, cloneDisk string, ra
 	if err != nil {
 		return err
 	}
-
-	// UEFI 显卡修复：OVMF 无法驱动 virtio 显卡，UEFI 下将 virtio 显卡改用 bochs 避免黑屏
-	vmXML = vm_xml.ApplyUEFIVideoModelWorkaround(vmXML)
 
 	if _, err := libvirt_rpc.DefineDomainXMLRPC(vmXML); err != nil {
 		return fmt.Errorf("定义虚拟机失败: %w", err)

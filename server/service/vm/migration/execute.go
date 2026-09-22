@@ -19,6 +19,7 @@ import (
 var (
 	vmMigrationNVRAMTemplateAttr = regexp.MustCompile(`\s+template=['"][^'"]+['"]`)
 	vmMigrationNVRAMTemplateFmt  = regexp.MustCompile(`\s+templateFormat=['"][^'"]+['"]`)
+	vmMigrationNVRAMFormatAttr   = regexp.MustCompile(`\s+format=['"][^'"]+['"]`)
 	vmMigrationNVRAMTag          = regexp.MustCompile(`(?s)<nvram\b[^>]*(?:/>|>.*?</nvram>)`)
 )
 
@@ -295,18 +296,42 @@ func cleanupLiveMigrationTargets(ctx context.Context, node model.HostNode, paths
 	}
 }
 
-// stripNVRAMTemplateFromXML 从 XML 中移除 <nvram> 标签的 template 和 templateFormat 属性
-// 用于热迁移场景：目标节点已预先创建好 qcow2 NVRAM 文件，不需要 libvirt 再从模板转换
-func stripNVRAMTemplateFromXML(xmlContent string) string {
+// stripNVRAMTemplateFromXML 从 XML 中移除 <nvram> 标签的 template/templateFormat 属性。
+// 用于热迁移场景：目标节点已预先创建好 NVRAM 文件，不需要 libvirt 再从模板转换。
+// stripFormat 为 true 时同时移除 format 属性（目标 libvirt 不支持该属性时必须移除，否则会残留误导性配置）。
+func stripNVRAMTemplateFromXML(xmlContent string, stripFormat bool) string {
 	return vmMigrationNVRAMTag.ReplaceAllStringFunc(xmlContent, func(tag string) string {
 		tag = vmMigrationNVRAMTemplateAttr.ReplaceAllString(tag, "")
 		tag = vmMigrationNVRAMTemplateFmt.ReplaceAllString(tag, "")
+		if stripFormat {
+			tag = vmMigrationNVRAMFormatAttr.ReplaceAllString(tag, "")
+		}
 		return tag
 	})
 }
 
-// prepareMigrationNVRAMOnTarget 在目标节点预创建 UEFI NVRAM qcow2 文件
-// 返回 NVRAM 文件路径（用于失败清理）和修改后的 XML（已移除 template 属性）
+// probeRemoteLibvirtVersion 通过 SSH 探测目标节点的 libvirt 版本（编码值）。探测失败返回 0（按旧版本降级）。
+func probeRemoteLibvirtVersion(ctx context.Context, node model.HostNode) uint32 {
+	if out, err := service.RemoteSSHCommand(ctx, node, "virsh version", 20*time.Second); err == nil {
+		if v := vm_xml.ParseLibvirtVersionFromVirshOutput(out); v > 0 {
+			return v
+		}
+	}
+	if out, err := service.RemoteSSHCommand(ctx, node, "libvirtd --version", 20*time.Second); err == nil {
+		if v := vm_xml.ParseLibvirtVersionFromDaemonOutput(out); v > 0 {
+			return v
+		}
+	}
+	return 0
+}
+
+// prepareMigrationNVRAMOnTarget 在目标节点预置 UEFI NVRAM 文件。
+//
+// 关键改进：传输源虚拟机**真实的 NVRAM**（保留已登记启动项与安全启动密钥），
+// 而非从 OVMF 模板重建（后者会丢失 Windows 安全启动等配置，可能导致目标无法引导）。
+// 目标文件格式依据**目标节点** libvirt 版本策略决定，并据此调整 XML 的 format 属性。
+//
+// 返回目标 NVRAM 路径（用于失败清理）和修改后的 XML。
 func prepareMigrationNVRAMOnTarget(ctx context.Context, node model.HostNode, xmlText string) (nvramPath string, modifiedXML string, err error) {
 	bootType := vm_xml.ParseVMBootTypeFromDomainXML(xmlText)
 	if bootType != vm_xml.VMBootTypeUEFI && bootType != vm_xml.VMBootTypeUEFISecure {
@@ -316,21 +341,59 @@ func prepareMigrationNVRAMOnTarget(ctx context.Context, node model.HostNode, xml
 	if nvramPath == "" {
 		return "", xmlText, nil
 	}
-	secure := bootType == vm_xml.VMBootTypeUEFISecure
-	templatePath := vm_xml.ResolveOVMFVarsTemplatePath(secure)
+
+	// 目标节点版本与目标格式。
+	targetVersion := probeRemoteLibvirtVersion(ctx, node)
+	targetFormat := vm_xml.NVRAMFormatForVersion(targetVersion)
+	targetSupportsFormatAttr := vm_xml.SupportsNVRAMFormatAttrForVersion(targetVersion)
+
+	// 源 NVRAM 真实格式（本地文件）。
+	sourceFormat := vm_xml.DetectQemuImageFormat(nvramPath)
+	if sourceFormat == "" {
+		sourceFormat = "raw"
+	}
+
 	nvramDir := filepath.Dir(nvramPath)
-	mkdirCmd := "mkdir -p " + utils.ShellSingleQuote(nvramDir)
-	convertCmd := fmt.Sprintf("qemu-img convert -f raw -O qcow2 %s %s && chmod 600 %s && (chown libvirt-qemu:kvm %s 2>/dev/null || chown qemu:qemu %s 2>/dev/null || true)",
-		utils.ShellSingleQuote(templatePath),
-		utils.ShellSingleQuote(nvramPath),
+	if _, err := service.RemoteSSHCommand(ctx, node, "mkdir -p "+utils.ShellSingleQuote(nvramDir), 30*time.Second); err != nil {
+		return nvramPath, xmlText, fmt.Errorf("目标节点创建 NVRAM 目录失败: %w", err)
+	}
+
+	if sourceFormat == targetFormat {
+		// 格式一致：直接把源 NVRAM 原样传到目标，保持变量存储位精确。
+		if err := service.RemoteRsyncFileWithoutTimeout(ctx, node, nvramPath, nvramPath); err != nil {
+			return nvramPath, xmlText, fmt.Errorf("传输源 NVRAM 到目标失败: %w", err)
+		}
+	} else {
+		// 格式不一致：先传到目标临时文件，再在目标上转换为目标格式。
+		tmpRemote := nvramPath + ".mig-src"
+		if err := service.RemoteRsyncFileWithoutTimeout(ctx, node, nvramPath, tmpRemote); err != nil {
+			return nvramPath, xmlText, fmt.Errorf("传输源 NVRAM 到目标失败: %w", err)
+		}
+		convertCmd := fmt.Sprintf("qemu-img convert -f %s -O %s %s %s && rm -f %s",
+			utils.ShellSingleQuote(sourceFormat),
+			utils.ShellSingleQuote(targetFormat),
+			utils.ShellSingleQuote(tmpRemote),
+			utils.ShellSingleQuote(nvramPath),
+			utils.ShellSingleQuote(tmpRemote))
+		if _, err := service.RemoteSSHCommand(ctx, node, convertCmd, 60*time.Second); err != nil {
+			return nvramPath, xmlText, fmt.Errorf("目标节点转换 NVRAM 格式失败: %w", err)
+		}
+	}
+	permCmd := fmt.Sprintf("chmod 600 %s && (chown libvirt-qemu:kvm %s 2>/dev/null || chown qemu:qemu %s 2>/dev/null || true)",
 		utils.ShellSingleQuote(nvramPath),
 		utils.ShellSingleQuote(nvramPath),
 		utils.ShellSingleQuote(nvramPath))
-	fullCmd := mkdirCmd + " && " + convertCmd
-	if _, err := service.RemoteSSHCommand(ctx, node, fullCmd, 60*time.Second); err != nil {
-		return nvramPath, xmlText, fmt.Errorf("目标节点创建 NVRAM 文件失败: %w", err)
+	if _, err := service.RemoteSSHCommand(ctx, node, permCmd, 30*time.Second); err != nil {
+		return nvramPath, xmlText, fmt.Errorf("目标节点设置 NVRAM 权限失败: %w", err)
 	}
-	modifiedXML = stripNVRAMTemplateFromXML(xmlText)
+
+	// 移除 template/templateFormat（目标已就绪，无需从模板转换）；
+	// 目标不支持 format 属性时一并移除 format，避免残留在旧版本上被忽略却与实际不符。
+	modifiedXML = stripNVRAMTemplateFromXML(xmlText, !targetSupportsFormatAttr)
+	// 目标支持 format 属性时，确保 XML 声明的格式与目标文件实际格式一致。
+	if targetSupportsFormatAttr {
+		modifiedXML = vm_xml.SetDomainNVRAMFormat(modifiedXML, targetFormat)
+	}
 	return nvramPath, modifiedXML, nil
 }
 

@@ -42,9 +42,9 @@ func importVMWindowsDefine(params *ImportVMParams, destDiskPath, format string, 
 		networkXML = service.BuildOVSInterfaceXML(macAddr, params.NicModel) + "\n"
 	}
 
-	// Generate qcow2 NVRAM
+	// 生成 NVRAM（格式按当前 libvirt 版本策略决定）
 	nvramClone := fmt.Sprintf("/var/lib/libvirt/qemu/nvram/%s_VARS.fd", params.Name)
-	if err := vm_xml.CreateQCOW2NVRAMFromTemplate("/usr/share/OVMF/OVMF_VARS_4M.ms.fd", nvramClone); err != nil {
+	if err := vm_xml.CreateNVRAMFromTemplate("/usr/share/OVMF/OVMF_VARS_4M.ms.fd", nvramClone); err != nil {
 		_ = os.Remove(destDiskPath)
 		return err
 	}
@@ -70,10 +70,12 @@ func importVMWindowsDefine(params *ImportVMParams, destDiskPath, format string, 
 		clockOpenTag = fmt.Sprintf("<clock offset='%s' start='%s'>", rtcOffset, epoch)
 	}
 
-	// 使用显式 loader/nvram，不使用 firmware='efi' 自动选择，
-	// 避免 libvirt 自动填充 nvram format='raw' 与 qcow2 格式不匹配导致黑屏。
+	// 使用显式 loader/nvram，不使用 firmware='efi' 自动选择。
+	// <nvram> 的 format/templateFormat 属性由 BuildNVRAMElementXML 按 libvirt 版本能力决定，
+	// 确保磁盘 NVRAM 真实格式与 libvirt 加载的 pflash 格式一致（否则 OVMF 读错变量存储会黑屏）。
 	loaderPath := vm_xml.ResolveOVMFLoaderPath(true)
 	varsTemplate := vm_xml.ResolveOVMFVarsTemplatePath(true)
+	nvramElement := strings.TrimLeft(vm_xml.BuildNVRAMElementXML(varsTemplate, nvramClone), " ")
 
 	vmXML := fmt.Sprintf(`<domain type='kvm'>
   <name>%s</name>
@@ -82,7 +84,7 @@ func importVMWindowsDefine(params *ImportVMParams, destDiskPath, format string, 
   <os>
     <type arch='%s' machine='%s'>hvm</type>
     <loader readonly='yes' secure='yes' type='pflash'>%s</loader>
-    <nvram template='%s' templateFormat='raw' format='qcow2'>%s</nvram>
+    %s
     <boot dev='hd'/>
   </os>
   <features>
@@ -120,8 +122,7 @@ func importVMWindowsDefine(params *ImportVMParams, destDiskPath, format string, 
 		archName,
 		machineType,
 		loaderPath,
-		varsTemplate,
-		nvramClone,
+		nvramElement,
 		hyperVBlock,
 		clockOpenTag,
 		hyperVFeaturesBlock,
@@ -215,9 +216,6 @@ func importVMWindowsDefine(params *ImportVMParams, destDiskPath, format string, 
 		return err
 	}
 
-	// UEFI 显卡修复：OVMF 无法驱动 virtio 显卡，UEFI 下将 virtio 显卡改用 bochs 避免黑屏
-	vmXML = vm_xml.ApplyUEFIVideoModelWorkaround(vmXML)
-
 	xmlPath := fmt.Sprintf("/tmp/_vm-import-%s.xml", params.Name)
 	if err := os.WriteFile(xmlPath, []byte(vmXML), 0644); err != nil {
 		_ = os.Remove(destDiskPath)
@@ -267,7 +265,7 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
 	}
 
 	nvramClone := fmt.Sprintf("/var/lib/libvirt/qemu/nvram/%s_VARS.fd", params.Name)
-	if err := vm_xml.CreateQCOW2NVRAMFromTemplate("/usr/share/OVMF/OVMF_VARS_4M.ms.fd", nvramClone); err != nil {
+	if err := vm_xml.CreateNVRAMFromTemplate("/usr/share/OVMF/OVMF_VARS_4M.ms.fd", nvramClone); err != nil {
 		_ = os.Remove(destDiskPath)
 		return err
 	}
@@ -296,6 +294,7 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
 	// 使用显式 loader/nvram，不使用 firmware='efi' 自动选择
 	loaderPath2 := vm_xml.ResolveOVMFLoaderPath(true)
 	varsTemplate2 := vm_xml.ResolveOVMFVarsTemplatePath(true)
+	nvramElement2 := strings.TrimLeft(vm_xml.BuildNVRAMElementXML(varsTemplate2, nvramClone), " ")
 	systemDiskBus := normalizeImportDiskBus(params.SystemDiskBus)
 	systemDiskDevice := importDiskTargetDevice(systemDiskBus)
 
@@ -306,7 +305,7 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
   <os>
     <type arch='%s' machine='%s'>hvm</type>
     <loader readonly='yes' secure='yes' type='pflash'>%s</loader>
-    <nvram template='%s' templateFormat='raw' format='qcow2'>%s</nvram>
+    %s
     <boot dev='hd'/>
   </os>
   <features>
@@ -344,8 +343,7 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
 		archName,
 		machineType,
 		loaderPath2,
-		varsTemplate2,
-		nvramClone,
+		nvramElement2,
 		hyperVBlock,
 		clockOpenTag,
 		hyperVFeaturesBlock,
@@ -434,9 +432,6 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
 		_ = os.Remove(destDiskPath)
 		return err
 	}
-
-	// UEFI 显卡修复：OVMF 无法驱动 virtio 显卡，UEFI 下将 virtio 显卡改用 bochs 避免黑屏
-	vmXML = vm_xml.ApplyUEFIVideoModelWorkaround(vmXML)
 
 	xmlPath := fmt.Sprintf("/tmp/_vm-importd-%s.xml", params.Name)
 	if err := os.WriteFile(xmlPath, []byte(vmXML), 0644); err != nil {

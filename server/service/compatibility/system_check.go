@@ -771,6 +771,17 @@ func (r *runner) verifyFormalCreationXML(xmlContent string) error {
 	if actual := vm_xml.ParseVMBootTypeFromDomainXML(xmlContent); actual != r.report.VM.BootType {
 		return fmt.Errorf("引导固件不一致: xml=%s expected=%s", actual, r.report.VM.BootType)
 	}
+	// UEFI 虚拟机：断言磁盘上的 NVRAM 真实格式与当前 libvirt 版本策略一致。
+	// 这正是历史黑屏 bug 被静默违反的不变量——磁盘为 qcow2 但 libvirt 按 raw 加载 pflash。
+	if vm_xml.DomainUsesPflashNVRAM(xmlContent) {
+		if nvramPath := vm_xml.ExtractDomainNVRAMPath(xmlContent); nvramPath != "" {
+			fileFormat := vm_xml.DetectQemuImageFormat(nvramPath)
+			wantFormat := vm_xml.PreferredNVRAMFormat()
+			if fileFormat != "" && fileFormat != wantFormat {
+				return fmt.Errorf("UEFI NVRAM 磁盘格式与 libvirt 版本策略不一致: file=%s expected=%s（libvirt %s）", fileFormat, wantFormat, vm_xml.LibvirtVersionString())
+			}
+		}
+	}
 	if actual := vm_xml.ParseVMVideoModelFromDomainXML(xmlContent); actual != r.report.VM.VideoModel {
 		return fmt.Errorf("显示设备不一致: xml=%s expected=%s", actual, r.report.VM.VideoModel)
 	}

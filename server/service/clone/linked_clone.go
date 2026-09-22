@@ -369,9 +369,6 @@ func LinkedCloneVM(ctx context.Context, params *LinkedCloneParams, progressFn fu
 		return nil, err
 	}
 
-	// UEFI 显卡修复：OVMF 无法驱动 virtio 显卡，UEFI 下将 virtio 显卡改用 bochs 避免黑屏
-	vmXML = vm_xml.ApplyUEFIVideoModelWorkaround(vmXML)
-
 	// 定义虚拟机（直接通过 RPC，无需临时文件）
 	if _, err := libvirt_rpc.DefineDomainXMLRPC(vmXML); err != nil {
 		cleanupLinkedCloneArtifacts("", cloneDisk)

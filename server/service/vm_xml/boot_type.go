@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"kvm_console/logger"
 	"kvm_console/service/arch"
 	"kvm_console/utils"
 )
@@ -202,8 +203,26 @@ func buildUEFILoaderNVRAMXML(secure bool, loaderPath, varsTemplate, nvramPath st
 	if secure {
 		loaderAttrs = " readonly='yes' secure='yes' type='pflash'"
 	}
-	return fmt.Sprintf("    <loader%s>%s</loader>\n    <nvram template='%s' templateFormat='raw' format='qcow2'>%s</nvram>",
-		loaderAttrs, loaderPath, varsTemplate, nvramPath)
+	return fmt.Sprintf("    <loader%s>%s</loader>\n%s",
+		loaderAttrs, loaderPath, BuildNVRAMElementXML(varsTemplate, nvramPath))
+}
+
+// BuildNVRAMElementXML 按当前 libvirt 版本能力生成 <nvram> 元素。
+//
+// - libvirt < 9.2.0：不声明 format（libvirt 会忽略并按 raw 加载），磁盘文件必须是 raw；
+// - libvirt >= 9.2.0：显式声明 format=PreferredNVRAMFormat()，便于 dumpxml 自解释；
+// - libvirt >= 10.10.0：额外声明 templateFormat='raw'（OVMF VARS 模板始终是 raw）。
+//
+// 该函数是所有创建/克隆/导入路径写 <nvram> 的唯一入口，避免各处手写 format 字面量再次引入格式错配。
+func BuildNVRAMElementXML(templatePath, nvramPath string) string {
+	attrs := fmt.Sprintf(" template='%s'", templatePath)
+	if SupportsNVRAMTemplateFormatAttr() {
+		attrs += " templateFormat='raw'" // OVMF VARS 模板始终为 raw
+	}
+	if SupportsNVRAMFormatAttr() {
+		attrs += fmt.Sprintf(" format='%s'", PreferredNVRAMFormat())
+	}
+	return fmt.Sprintf("    <nvram%s>%s</nvram>", attrs, nvramPath)
 }
 
 func insertUEFIFirmwareXML(osBlock, firmwareXML string) string {
@@ -258,8 +277,9 @@ func ensureVMSecureBootSMM(xmlContent string) string {
 }
 
 // ApplyVMBootTypeToDomainXML 将引导方式写入 domain XML。
-// 使用显式 <loader> + <nvram format='qcow2'> 模式，不使用 firmware='efi' 自动选择，
-// 以避免 libvirt 自动填充 nvram format='raw' 导致与 qcow2 实际格式不匹配（黑屏），
+// 使用显式 <loader> + <nvram> 模式（不使用 firmware='efi' 自动选择），
+// <nvram> 的 format/templateFormat 属性由 BuildNVRAMElementXML 按 libvirt 版本能力决定，
+// 确保磁盘上的 NVRAM 真实格式与 libvirt 实际加载的 pflash 格式一致（否则 OVMF 读到错误变量存储会黑屏），
 // 同时避免不同环境缺少 firmware descriptor 导致 "Unable to find 'efi' firmware" 错误。
 func ApplyVMBootTypeToDomainXML(name, xmlContent, bootType string) (string, error) {
 	normalized := NormalizeVMBootType(bootType)
@@ -313,7 +333,14 @@ func ApplyVMBootTypeToDomainXML(name, xmlContent, bootType string) (string, erro
 	return updated, nil
 }
 
-// EnsureVMUEFINVRAMFile 确保 UEFI NVRAM 文件存在且格式正确。
+// EnsureVMUEFINVRAMFile 确保 UEFI NVRAM 文件存在，且其磁盘格式与当前 libvirt 版本策略一致。
+//
+// 该函数是各生命周期路径（创建/导入/克隆/迁移接管/引导方式切换）统一的 NVRAM 自愈入口：
+//   - 文件不存在 → 按 PreferredNVRAMFormat() 从模板生成；
+//   - 文件存在但格式与策略不符 → 仅在虚拟机“关机”状态下转换（运行/暂停时 QEMU 持有 pflash，
+//     就地替换会导致未定义行为甚至变量存储损坏，因此仅告警并跳过，待下次关机生命周期操作自愈）。
+//
+// vmName 传空表示无法核实运行状态（例如尚未定义的临时 XML），此时按“非运行”处理以允许生成/转换。
 func EnsureVMUEFINVRAMFile(name, xmlContent, bootType string) error {
 	normalized := NormalizeVMBootType(bootType)
 	if normalized != VMBootTypeUEFI && normalized != VMBootTypeUEFISecure {
@@ -324,11 +351,28 @@ func EnsureVMUEFINVRAMFile(name, xmlContent, bootType string) error {
 	if nvramPath == "" {
 		return fmt.Errorf("未找到可用的 UEFI NVRAM 路径")
 	}
+
+	wantFormat := PreferredNVRAMFormat()
+
 	if _, err := os.Stat(nvramPath); err == nil {
-		if DetectQemuImageFormat(nvramPath) == "qcow2" {
+		actual := DetectQemuImageFormat(nvramPath)
+		if actual == "" {
+			// 无法判定格式（文件损坏/权限/qemu-img 异常）——不要当作“没问题”，明确报错。
+			return fmt.Errorf("无法识别 NVRAM 文件格式: %s", nvramPath)
+		}
+		if actual == wantFormat {
 			return nil
 		}
-		return ConvertExistingNVRAMToQCOW2(nvramPath)
+		// 格式不符，需要修复：仅在关机状态下就地转换。
+		if name != "" && domainIsActive(name) {
+			logger.App.Warn("NVRAM 格式与 libvirt 策略不符，但虚拟机正在运行，暂不转换（关机后将自动修复）",
+				"vm", name, "path", nvramPath, "actual", actual, "want", wantFormat)
+			return nil
+		}
+		if err := ConvertNVRAMFormat(nvramPath, actual, wantFormat); err != nil {
+			return fmt.Errorf("转换 UEFI NVRAM 格式失败: %w", err)
+		}
+		return nil
 	}
 
 	vmArch := ParseVMArchFromDomainXML(xmlContent)
@@ -337,10 +381,31 @@ func EnsureVMUEFINVRAMFile(name, xmlContent, bootType string) error {
 	}
 	profile := arch.GetProfile(vmArch)
 	templatePath := profile.UEFIVarsTemplatePath(normalized == VMBootTypeUEFISecure)
-	if err := CreateQCOW2NVRAMFromTemplate(templatePath, nvramPath); err != nil {
+	if err := CreateNVRAMFromTemplate(templatePath, nvramPath); err != nil {
 		return fmt.Errorf("创建 UEFI NVRAM 文件失败: %w", err)
 	}
 	return nil
+}
+
+// domainIsActive 通过 virsh domstate 判断虚拟机是否处于运行/暂停等活动状态。
+// 无法判定时保守返回 true（宁可跳过转换也不要在可能运行的虚拟机上就地替换 NVRAM）。
+func domainIsActive(name string) bool {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return false
+	}
+	result := utils.ExecCommand("virsh", "domstate", name)
+	if result.Error != nil {
+		// 域不存在时 virsh 报错——此时并非“运行中”，允许对临时/未定义域的文件进行操作。
+		if strings.Contains(result.Stderr, "not found") ||
+			strings.Contains(result.Stderr, "Domain not found") ||
+			strings.Contains(result.Stderr, "failed to get domain") {
+			return false
+		}
+		return true
+	}
+	state := strings.ToLower(strings.TrimSpace(result.Stdout))
+	return state != "shut off" && state != "shutoff" && state != ""
 }
 
 func DetectQemuImageFormat(path string) string {
@@ -355,9 +420,28 @@ func DetectQemuImageFormat(path string) string {
 	return strings.ToLower(strings.TrimSpace(parseQemuInfoStr(result.Stdout, "format")))
 }
 
+// CreateNVRAMFromTemplate 从模板（通常是 OVMF VARS，也可能是源虚拟机的 NVRAM）生成目标 NVRAM 文件，
+// 目标格式由当前 libvirt 版本策略（PreferredNVRAMFormat）决定。
+// 当源格式与目标格式一致时直接按字节复制（更快且对变量存储保持位精确）；否则用 qemu-img 转换。
+func CreateNVRAMFromTemplate(templatePath, nvramPath string) error {
+	return createNVRAMFromTemplate(templatePath, nvramPath, PreferredNVRAMFormat())
+}
+
+// CreateQCOW2NVRAMFromTemplate 已废弃：保留以兼容历史调用，实际按当前版本策略生成。
+//
+// Deprecated: 使用 CreateNVRAMFromTemplate。名称中的 "QCOW2" 已不再准确——
+// 目标格式随 libvirt 版本而定（旧版本必须使用 raw）。
 func CreateQCOW2NVRAMFromTemplate(templatePath, nvramPath string) error {
+	return CreateNVRAMFromTemplate(templatePath, nvramPath)
+}
+
+func createNVRAMFromTemplate(templatePath, nvramPath, targetFormat string) error {
 	templatePath = strings.TrimSpace(templatePath)
 	nvramPath = strings.TrimSpace(nvramPath)
+	targetFormat = NormalizeQemuImgFormat(targetFormat)
+	if targetFormat == "" {
+		targetFormat = "raw"
+	}
 	if templatePath == "" || nvramPath == "" {
 		return fmt.Errorf("NVRAM 模板路径或目标路径为空")
 	}
@@ -373,21 +457,44 @@ func CreateQCOW2NVRAMFromTemplate(templatePath, nvramPath string) error {
 		sourceFormat = "raw"
 	}
 	_ = os.Remove(nvramPath)
-	result := utils.ExecCommand("qemu-img", "convert", "-f", sourceFormat, "-O", "qcow2", templatePath, nvramPath)
-	if result.Error != nil {
-		return fmt.Errorf("转换 NVRAM 为 qcow2 失败: %s", firstNonEmpty(result.Stderr, result.Error.Error()))
+	if sourceFormat == targetFormat {
+		// 格式一致：直接按字节复制，保持变量存储位精确。
+		if err := copyFileContents(templatePath, nvramPath); err != nil {
+			return fmt.Errorf("复制 NVRAM 模板失败: %w", err)
+		}
+	} else {
+		result := utils.ExecCommand("qemu-img", "convert", "-f", sourceFormat, "-O", targetFormat, templatePath, nvramPath)
+		if result.Error != nil {
+			return fmt.Errorf("转换 NVRAM 为 %s 失败: %s", targetFormat, firstNonEmpty(result.Stderr, result.Error.Error()))
+		}
 	}
+	return applyNVRAMFilePerms(nvramPath)
+}
+
+func applyNVRAMFilePerms(nvramPath string) error {
 	if err := os.Chmod(nvramPath, 0600); err != nil {
 		return fmt.Errorf("设置 NVRAM 文件权限失败: %w", err)
 	}
 	if err := utils.ChownLibvirtQEMU(nvramPath); err != nil {
-		return fmt.Errorf("设置 NVRAM 文件权限失败: %w", err)
+		return fmt.Errorf("设置 NVRAM 文件属主失败: %w", err)
 	}
 	return nil
 }
 
+func copyFileContents(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0600)
+}
+
 // SetShimFallbackNoReboot 预置 shim fallback 的连续引导标记。
 // 首次启动仍会自动登记发行版启动项，但不会显示倒计时并执行冷复位。
+//
+// 注意：virt-fw-vars 只能正确处理 raw edk2 变量存储；直接喂 qcow2 会让它把 qcow2 头部
+// 当作变量存储扫描（历史 bug，导致静默损坏）。因此当 NVRAM 为 qcow2 时，
+// 先转成 raw 临时文件、写入标记、再转回原格式，最后原子替换。
 func SetShimFallbackNoReboot(nvramPath string) error {
 	nvramPath = strings.TrimSpace(nvramPath)
 	if nvramPath == "" {
@@ -402,61 +509,115 @@ func SetShimFallbackNoReboot(nvramPath string) error {
 		return fmt.Errorf("未找到 virt-fw-vars，请安装 python3-virt-firmware")
 	}
 
-	tmpFile, err := os.CreateTemp(filepath.Dir(nvramPath), "."+filepath.Base(nvramPath)+".shim-*.qcow2")
-	if err != nil {
-		return fmt.Errorf("创建 NVRAM 临时文件失败: %w", err)
+	origFormat := DetectQemuImageFormat(nvramPath)
+	if origFormat == "" {
+		return fmt.Errorf("无法识别 NVRAM 文件格式: %s", nvramPath)
 	}
-	tmpPath := tmpFile.Name()
-	if err := tmpFile.Close(); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("关闭 NVRAM 临时文件失败: %w", err)
+
+	// virt-fw-vars 的输入/输出都用 raw：若原文件是 qcow2 先转 raw。
+	rawInput := nvramPath
+	var rawInputTmp string
+	if origFormat != "raw" {
+		rawInputTmp = nvramPath + ".shim-in.raw"
+		_ = os.Remove(rawInputTmp)
+		if r := utils.ExecCommand("qemu-img", "convert", "-f", origFormat, "-O", "raw", nvramPath, rawInputTmp); r.Error != nil {
+			return fmt.Errorf("转换 NVRAM 为 raw 以写入 shim 标记失败: %s", firstNonEmpty(r.Stderr, r.Error.Error()))
+		}
+		defer os.Remove(rawInputTmp)
+		rawInput = rawInputTmp
 	}
-	_ = os.Remove(tmpPath)
-	defer os.Remove(tmpPath)
+
+	rawOutput := nvramPath + ".shim-out.raw"
+	_ = os.Remove(rawOutput)
+	defer os.Remove(rawOutput)
 
 	result := utils.ExecCommand(toolPath,
-		"--input", nvramPath,
-		"--output", tmpPath,
+		"--input", rawInput,
+		"--output", rawOutput,
 		"--set-fallback-no-reboot",
 	)
 	if result.Error != nil {
 		return fmt.Errorf("写入 shim 连续引导标记失败: %s", firstNonEmpty(result.Stderr, result.Error.Error()))
 	}
-	if DetectQemuImageFormat(tmpPath) != "qcow2" {
-		return fmt.Errorf("写入后的 NVRAM 不是有效的 QCOW2 文件")
+	// 校验变量存储有效性：virt-fw-vars --print 能成功解析即认为是合法的 edk2 varstore。
+	if r := utils.ExecCommand(toolPath, "--input", rawOutput, "--print"); r.Error != nil {
+		return fmt.Errorf("写入后的 NVRAM 不是有效的 edk2 变量存储: %s", firstNonEmpty(r.Stderr, r.Error.Error()))
 	}
-	if err := os.Chmod(tmpPath, 0600); err != nil {
-		return fmt.Errorf("设置 NVRAM 文件权限失败: %w", err)
+
+	// 转回原格式（若需要）。
+	finalTmp := nvramPath + ".shim.tmp"
+	_ = os.Remove(finalTmp)
+	defer os.Remove(finalTmp)
+	if origFormat == "raw" {
+		if err := copyFileContents(rawOutput, finalTmp); err != nil {
+			return fmt.Errorf("准备 NVRAM 结果文件失败: %w", err)
+		}
+	} else {
+		if r := utils.ExecCommand("qemu-img", "convert", "-f", "raw", "-O", origFormat, rawOutput, finalTmp); r.Error != nil {
+			return fmt.Errorf("将 NVRAM 转回 %s 失败: %s", origFormat, firstNonEmpty(r.Stderr, r.Error.Error()))
+		}
 	}
-	if err := utils.ChownLibvirtQEMU(tmpPath); err != nil {
-		return fmt.Errorf("设置 NVRAM 文件属主失败: %w", err)
+	if err := applyNVRAMFilePerms(finalTmp); err != nil {
+		return err
 	}
-	if err := os.Rename(tmpPath, nvramPath); err != nil {
+	if err := os.Rename(finalTmp, nvramPath); err != nil {
 		return fmt.Errorf("替换 NVRAM 文件失败: %w", err)
 	}
 	return nil
 }
 
-func ConvertExistingNVRAMToQCOW2(nvramPath string) error {
+// EnsureNVRAMFormatMatches 确保磁盘上的 NVRAM 文件为 wantFormat，不符则转换（带备份与回滚）。
+func EnsureNVRAMFormatMatches(nvramPath, wantFormat string) error {
 	nvramPath = strings.TrimSpace(nvramPath)
+	wantFormat = NormalizeQemuImgFormat(wantFormat)
 	if nvramPath == "" {
 		return fmt.Errorf("NVRAM 路径为空")
 	}
-	if DetectQemuImageFormat(nvramPath) == "qcow2" {
+	if wantFormat == "" {
+		wantFormat = PreferredNVRAMFormat()
+	}
+	actual := DetectQemuImageFormat(nvramPath)
+	if actual == "" {
+		return fmt.Errorf("无法识别 NVRAM 文件格式: %s", nvramPath)
+	}
+	if actual == wantFormat {
 		return nil
 	}
-	tmpPath := nvramPath + ".qcow2.tmp"
-	backupPath := nvramPath + ".raw.bak"
+	return ConvertNVRAMFormat(nvramPath, actual, wantFormat)
+}
+
+// ConvertNVRAMFormat 就地转换 NVRAM 文件格式（fromFormat→toFormat），保留原文件为带格式后缀的备份，失败自动回滚。
+// 调用方需自行保证虚拟机处于关机状态（QEMU 运行时持有 pflash，就地替换会导致变量存储损坏）。
+func ConvertNVRAMFormat(nvramPath, fromFormat, toFormat string) error {
+	nvramPath = strings.TrimSpace(nvramPath)
+	fromFormat = NormalizeQemuImgFormat(fromFormat)
+	toFormat = NormalizeQemuImgFormat(toFormat)
+	if nvramPath == "" {
+		return fmt.Errorf("NVRAM 路径为空")
+	}
+	if fromFormat == "" {
+		if fromFormat = DetectQemuImageFormat(nvramPath); fromFormat == "" {
+			return fmt.Errorf("无法识别 NVRAM 源格式: %s", nvramPath)
+		}
+	}
+	if toFormat == "" {
+		toFormat = PreferredNVRAMFormat()
+	}
+	if fromFormat == toFormat {
+		return nil
+	}
+	tmpPath := nvramPath + "." + toFormat + ".tmp"
+	backupPath := nvramPath + "." + fromFormat + ".bak"
 	for i := 1; ; i++ {
 		if _, err := os.Stat(backupPath); os.IsNotExist(err) {
 			break
 		}
-		backupPath = fmt.Sprintf("%s.raw.bak.%d", nvramPath, i)
+		backupPath = fmt.Sprintf("%s.%s.bak.%d", nvramPath, fromFormat, i)
 	}
 	_ = os.Remove(tmpPath)
-	result := utils.ExecCommand("qemu-img", "convert", "-f", "raw", "-O", "qcow2", nvramPath, tmpPath)
+	result := utils.ExecCommand("qemu-img", "convert", "-f", fromFormat, "-O", toFormat, nvramPath, tmpPath)
 	if result.Error != nil {
-		return fmt.Errorf("转换 NVRAM 为 qcow2 失败: %s", firstNonEmpty(result.Stderr, result.Error.Error()))
+		return fmt.Errorf("转换 NVRAM %s→%s 失败: %s", fromFormat, toFormat, firstNonEmpty(result.Stderr, result.Error.Error()))
 	}
 	if err := os.Rename(nvramPath, backupPath); err != nil {
 		_ = os.Remove(tmpPath)
@@ -467,13 +628,16 @@ func ConvertExistingNVRAMToQCOW2(nvramPath string) error {
 		_ = os.Remove(tmpPath)
 		return fmt.Errorf("替换 NVRAM 文件失败: %w", err)
 	}
-	if err := os.Chmod(nvramPath, 0600); err != nil {
-		return fmt.Errorf("设置 NVRAM 文件权限失败: %w", err)
-	}
-	if err := utils.ChownLibvirtQEMU(nvramPath); err != nil {
-		return fmt.Errorf("设置 NVRAM 文件权限失败: %w", err)
-	}
-	return nil
+	logger.App.Info("已转换 NVRAM 格式", "path", nvramPath, "from", fromFormat, "to", toFormat, "backup", backupPath)
+	return applyNVRAMFilePerms(nvramPath)
+}
+
+// ConvertExistingNVRAMToQCOW2 已废弃：保留以兼容历史调用。
+//
+// Deprecated: 使用 EnsureNVRAMFormatMatches / ConvertNVRAMFormat。旧行为强制 qcow2，
+// 在 libvirt < 9.2.0 上会导致黑屏。
+func ConvertExistingNVRAMToQCOW2(nvramPath string) error {
+	return EnsureNVRAMFormatMatches(nvramPath, "qcow2")
 }
 
 func DomainUsesPflashNVRAM(xmlContent string) bool {
@@ -501,19 +665,45 @@ func ExtractDomainNVRAMPath(xmlContent string) string {
 	return strings.TrimSpace(matches[1])
 }
 
+var (
+	nvramTagRegexp        = regexp.MustCompile(`(?s)<nvram\b([^>]*)>`)
+	nvramFormatAttrRegexp = regexp.MustCompile(`\s*\bformat=['"][^'"]+['"]`)
+)
+
 func SetDomainNVRAMFormat(xmlContent, format string) string {
 	format = strings.TrimSpace(format)
 	if strings.TrimSpace(xmlContent) == "" || format == "" {
 		return xmlContent
 	}
-	re := regexp.MustCompile(`(?s)<nvram\b([^>]*)>`)
-	return re.ReplaceAllStringFunc(xmlContent, func(tag string) string {
-		attrRe := regexp.MustCompile(`\bformat=['"][^'"]+['"]`)
-		if attrRe.MatchString(tag) {
-			return attrRe.ReplaceAllString(tag, "format='"+format+"'")
+	return nvramTagRegexp.ReplaceAllStringFunc(xmlContent, func(tag string) string {
+		if nvramFormatAttrRegexp.MatchString(tag) {
+			return nvramFormatAttrRegexp.ReplaceAllString(tag, " format='"+format+"'")
 		}
 		return strings.Replace(tag, "<nvram", "<nvram format='"+format+"'", 1)
 	})
+}
+
+// RemoveDomainNVRAMFormat 移除 <nvram> 的 format 属性（用于 libvirt 不支持该属性时避免误导性配置）。
+func RemoveDomainNVRAMFormat(xmlContent string) string {
+	if strings.TrimSpace(xmlContent) == "" {
+		return xmlContent
+	}
+	return nvramTagRegexp.ReplaceAllStringFunc(xmlContent, func(tag string) string {
+		return nvramFormatAttrRegexp.ReplaceAllString(tag, "")
+	})
+}
+
+// ApplyDomainNVRAMFormatPolicy 按当前 libvirt 能力统一处理 <nvram> 的 format 属性：
+// 支持 format 属性时注入指定格式（默认 PreferredNVRAMFormat），否则移除该属性以免 dumpxml 与实际不符。
+func ApplyDomainNVRAMFormatPolicy(xmlContent, format string) string {
+	format = strings.TrimSpace(format)
+	if format == "" {
+		format = PreferredNVRAMFormat()
+	}
+	if SupportsNVRAMFormatAttr() {
+		return SetDomainNVRAMFormat(xmlContent, format)
+	}
+	return RemoveDomainNVRAMFormat(xmlContent)
 }
 
 func firstNonEmpty(values ...string) string {

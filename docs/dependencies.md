@@ -35,6 +35,8 @@ Windows 来宾使用系统自带 PowerShell 存储命令，无额外来宾软件
 - `dmidecode` 已加入 `install.sh` 的 `APT_DEPS`（RPM 系映射同名包）。
 - OVF/OVA 功能复用安装脚本已有的 `qemu-utils` 与 Go 标准库归档能力，没有增加新的系统包。
 - `install.sh` 会按发行版尽力安装 `virt-fw-vars`；部分 RPM 系软件源缺少该工具时仅给出警告，不阻断安装和克隆。后端同样采用兼容降级，工具缺失或版本过旧时保留 shim 原有的一次性恢复流程。
+- **`virt-fw-vars` 仅能正确读写 raw 格式的 edk2 变量存储**：若直接向其传入 qcow2 格式的 NVRAM，会把 qcow2 头部误当作变量存储扫描（静默损坏，且退出码仍为 0）。因此 `SetShimFallbackNoReboot` 在 NVRAM 为 qcow2 时会先转成 raw、写入标记、再转回原格式；并改用 `virt-fw-vars --print` 成功解析来校验变量存储有效性（而非仅看 `qemu-img info` 的格式字段）。
+- **UEFI NVRAM 磁盘格式随宿主机 libvirt 版本自适应**：`<nvram>` 的 `format` 属性自 libvirt 9.2.0 起支持、`templateFormat` 自 10.10.0 起支持、UEFI(pflash) 内部快照自 10.9.0 起支持（要求 qcow2）。在更低版本（如 Ubuntu 22.04 的 libvirt 8.0.0）上，libvirt 会静默丢弃 `format='qcow2'` 并按 raw 加载 pflash——若磁盘文件实为 qcow2，OVMF 会读到错误的变量存储导致 UEFI 无法初始化显示（VNC 黑屏 "Guest has not initialized the display (yet)."）。为此后端由 `server/service/vm_xml/nvram_capability.go` 探测 libvirt 版本并统一决定 NVRAM 格式（`PreferredNVRAMFormat`，当前发布策略为始终使用 raw）、`<nvram>` 属性（`BuildNVRAMElementXML`）以及内部快照可用性；`EnsureVMUEFINVRAMFile` 会在虚拟机关机状态下自动把不符策略的既有 NVRAM 转换为正确格式（运行中仅告警，待关机后自愈）。
 - 首次安装兼容性实机测试完全复用安装脚本已有的 libvirt、QEMU、virtinst、Open vSwitch、dnsmasq、iproute2、iptables 和下载工具，没有新增第三方依赖。
 - 端口安全功能复用 `openvswitch-switch` / `openvswitch` 包提供的 `ovs-vsctl`、`ovs-ofctl` 与 `ovsdb-client`，没有新增软件包；较旧 OVS 是否具有 `pktps` meter 和 `ingress_policing_kpkts_*` 字段由启用预检与兼容性实机测试判定。
 - 端口镜像复用安装流程已有的 `iproute2`、Open vSwitch 与 systemd，不新增软件包；启用预检会检查 `tc`、`ip`、`ovs-vsctl`、`ovs-ofctl`、`systemd-run` 和 `systemctl`。

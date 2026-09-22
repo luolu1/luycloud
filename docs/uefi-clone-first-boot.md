@@ -8,14 +8,16 @@
 
 ## 面板处理
 
-QVMConsole 在非 Windows UEFI 模板克隆完成、虚拟机首次启动前，对克隆副本的 QCOW2 NVRAM 预置 shim 官方支持的 `FB_NO_REBOOT=1` 变量：
+luycloud 在非 Windows UEFI 模板克隆完成、虚拟机首次启动前，对克隆副本的 NVRAM 预置 shim 官方支持的 `FB_NO_REBOOT=1` 变量：
 
 1. `fallback.efi` 仍会读取 `BOOT*.CSV` 并登记正确的发行版启动项；
 2. 登记完成后直接启动第一个新启动项；
 3. 不显示恢复倒计时，也不执行额外的冷复位；
 4. 模板 NVRAM、系统盘和安全启动证书不会被改写。
 
-NVRAM 更新通过临时文件完成，确认输出仍为 QCOW2 并恢复 libvirt 权限后再原子替换，避免工具执行失败时损坏原文件。
+NVRAM 更新通过临时文件完成，恢复 libvirt 权限后再原子替换，避免工具执行失败时损坏原文件。
+
+> 注意：`virt-fw-vars` 只能正确处理 raw 格式的 edk2 变量存储。当 NVRAM 为 qcow2 时，后端会先转成 raw 再写入标记、随后转回原格式；并用 `virt-fw-vars --print` 能否成功解析来校验结果，而不是仅检查 `qemu-img info` 的格式字段（qcow2 头部残留会让格式检查产生假阳性）。NVRAM 的磁盘格式本身由宿主机 libvirt 版本决定，详见《运行时第三方依赖清单》中的 UEFI NVRAM 说明。
 
 ## 依赖与兼容
 

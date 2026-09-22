@@ -52,10 +52,11 @@ func prepareUEFITemplateNVRAMForClone(domainXML, vmName, templateNVRAMPath strin
 		cloneNVRAMPath = fmt.Sprintf("/var/lib/libvirt/qemu/nvram/%s_VARS.fd", vmName)
 		domainXML = ensureDomainNVRAMPath(domainXML, cloneNVRAMPath)
 	}
-	if err := vm_xml.CreateQCOW2NVRAMFromTemplate(templateNVRAMPath, cloneNVRAMPath); err != nil {
+	// 从模板虚拟机的 NVRAM 复制（继承已登记的启动项与安全启动密钥），目标格式按当前 libvirt 版本策略。
+	if err := vm_xml.CreateNVRAMFromTemplate(templateNVRAMPath, cloneNVRAMPath); err != nil {
 		return domainXML, fmt.Errorf("复制模板 UEFI NVRAM 失败: %w", err)
 	}
-	return vm_xml.SetDomainNVRAMFormat(domainXML, "qcow2"), nil
+	return vm_xml.ApplyDomainNVRAMFormatPolicy(domainXML, ""), nil
 }
 
 func ensureDomainNVRAMPath(domainXML, nvramPath string) string {
@@ -65,13 +66,20 @@ func ensureDomainNVRAMPath(domainXML, nvramPath string) string {
 	}
 	reWithContent := regexp.MustCompile(`(?s)<nvram([^>]*)>\s*[^<]*\s*</nvram>`)
 	if reWithContent.MatchString(domainXML) {
-		return vm_xml.SetDomainNVRAMFormat(reWithContent.ReplaceAllString(domainXML, "<nvram$1>"+nvramPath+"</nvram>"), "qcow2")
+		return vm_xml.ApplyDomainNVRAMFormatPolicy(reWithContent.ReplaceAllString(domainXML, "<nvram$1>"+nvramPath+"</nvram>"), "")
 	}
 	reSelfClosing := regexp.MustCompile(`(?s)<nvram([^/]*)/\s*>`)
 	if reSelfClosing.MatchString(domainXML) {
-		return vm_xml.SetDomainNVRAMFormat(reSelfClosing.ReplaceAllString(domainXML, "<nvram$1>"+nvramPath+"</nvram>"), "qcow2")
+		return vm_xml.ApplyDomainNVRAMFormatPolicy(reSelfClosing.ReplaceAllString(domainXML, "<nvram$1>"+nvramPath+"</nvram>"), "")
 	}
-	nvramXML := fmt.Sprintf("    <nvram template='/usr/share/OVMF/OVMF_VARS_4M.ms.fd' templateFormat='raw' format='qcow2'>%s</nvram>\n", nvramPath)
+	// 无 <nvram> 元素：按 domain 架构与安全启动状态推导模板路径后，用统一构建器生成。
+	secure := vm_xml.ParseVMBootTypeFromDomainXML(domainXML) == vm_xml.VMBootTypeUEFISecure
+	vmArch := vm_xml.ParseVMArchFromDomainXML(domainXML)
+	if vmArch == "" {
+		vmArch = "x86_64"
+	}
+	varsTemplate := arch.GetProfile(vmArch).UEFIVarsTemplatePath(secure)
+	nvramXML := vm_xml.BuildNVRAMElementXML(varsTemplate, nvramPath) + "\n"
 	if strings.Contains(domainXML, "</os>") {
 		return strings.Replace(domainXML, "</os>", nvramXML+"  </os>", 1)
 	}
@@ -247,9 +255,6 @@ func defineAndStartNonWindowsClone(params *CloneParams, cloneDisk string, ramMB 
 	if err != nil {
 		return err
 	}
-
-	// UEFI 显卡修复：OVMF 无法驱动 virtio 显卡，UEFI 下将 virtio 显卡改用 bochs 避免黑屏
-	vmXML = vm_xml.ApplyUEFIVideoModelWorkaround(vmXML)
 
 	if _, err := libvirt_rpc.DefineDomainXMLRPC(vmXML); err != nil {
 		return fmt.Errorf("定义虚拟机失败: %w", err)

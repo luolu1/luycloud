@@ -33,12 +33,13 @@ func SetVMBootType(name, bootType string) error {
 	if currentBootType == normalized {
 		return nil
 	}
-	if err := vm_xml.EnsureVMUEFINVRAMFile(name, xmlResult.Stdout, normalized); err != nil {
-		return err
-	}
 
+	// 先生成新引导方式的 XML，再据此确保 NVRAM 文件——这样 NVRAM 路径/格式与即将定义的配置一致。
 	updatedXML, err := vm_xml.ApplyVMBootTypeToDomainXML(name, xmlResult.Stdout, normalized)
 	if err != nil {
+		return err
+	}
+	if err := vm_xml.EnsureVMUEFINVRAMFile(name, updatedXML, normalized); err != nil {
 		return err
 	}
 	if err := SetVMInactiveDomainXML(name, updatedXML); err != nil {
