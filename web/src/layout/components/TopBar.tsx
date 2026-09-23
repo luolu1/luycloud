@@ -2,7 +2,7 @@
  * 顶部导航栏（与侧边栏贴边无缝衔接）
  * - 承载历史页面标签栏（固定顶部）
  * - 左侧为小屏菜单按钮（≤820px 显示）
- * - 右侧为开源版链接 + 赞助入口 + 主题切换按钮 + 预留扩展插槽（后续可放搜索、通知等）
+ * - 右侧为开源版链接 + 主题切换按钮 + 预留扩展插槽（后续可放搜索、通知等）
  */
 import { type ReactNode } from 'react'
 import { Modal, Tooltip, Dropdown } from '@douyinfe/semi-ui'
@@ -15,7 +15,6 @@ import { usePageTabsStore } from '@/stores/pageTabs'
 import { useNavigate } from 'react-router'
 import { logoutSession } from '@/api/auth'
 import PageTabsBar from './PageTabsBar'
-import SponsorWidget from './SponsorWidget'
 
 interface TopBarProps {
   /** 小屏打开侧边栏抽屉 */
@@ -79,8 +78,6 @@ export default function TopBar({ onOpenMobile, extra }: TopBarProps) {
             <span>开源版</span>
           </a>
         </Tooltip>
-        {/* 赞助支持入口（下拉菜单 + 自动弹窗） */}
-        <SponsorWidget />
         {/* 主题切换（深色 / 浅色） */}
         <Tooltip content={isDark ? '切换为浅色' : '切换为深色'} position="bottom">
           <div
