@@ -81,3 +81,8 @@ func PrepareFnOSSystemDiskExpansionExported(ctx context.Context, cloneDisk strin
 func PrepareWindowsSystemDiskExpansionExported(ctx context.Context, cloneDisk string, progressFn func(int, string)) error {
 	return prepareWindowsSystemDiskExpansion(ctx, cloneDisk, progressFn)
 }
+
+// PrepareLinuxSystemDiskExpansionExported exports prepareLinuxSystemDiskExpansion for clone Deps
+func PrepareLinuxSystemDiskExpansionExported(ctx context.Context, cloneDisk string, progressFn func(int, string)) error {
+	return prepareLinuxSystemDiskExpansion(ctx, cloneDisk, progressFn)
+}

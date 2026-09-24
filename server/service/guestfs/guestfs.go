@@ -21,6 +21,7 @@
 package guestfs
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -292,5 +293,21 @@ func ExecSensitiveNoTimeout(name string, args ...string) *utils.CmdResult {
 func Exec(name string, args ...string) *utils.CmdResult {
 	return execHeal(func(env []string) *utils.CmdResult {
 		return utils.ExecCommandWithEnvNoTimeout(env, name, args...)
+	})
+}
+
+// ExecShellNoTimeout 通过 bash -c 执行含 guestfish here-doc 的脚本，注入规避环境变量并具备
+// appliance 崩溃自愈能力。适用于 windows/fnos/linux 离线磁盘调整中构造的 guestfish 脚本。
+func ExecShellNoTimeout(script string) *utils.CmdResult {
+	return execHeal(func(env []string) *utils.CmdResult {
+		return utils.ExecShellWithEnvNoTimeout(env, script)
+	})
+}
+
+// ExecShellContext 通过 bash -c 执行 guestfish 脚本，注入规避环境变量并具备自愈能力，
+// 仅响应上下文取消、不设置自动超时。适用于写盘型 guestfish 操作。
+func ExecShellContext(ctx context.Context, script string) *utils.CmdResult {
+	return execHeal(func(env []string) *utils.CmdResult {
+		return utils.ExecShellContextWithEnv(ctx, env, script)
 	})
 }

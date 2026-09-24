@@ -1471,6 +1471,7 @@ func initCloneDeps() {
 		// Disk expansion
 		PrepareFnOSSystemDiskExpansion:    service.PrepareFnOSSystemDiskExpansionExported,
 		PrepareWindowsSystemDiskExpansion: service.PrepareWindowsSystemDiskExpansionExported,
+		PrepareLinuxSystemDiskExpansion:   service.PrepareLinuxSystemDiskExpansionExported,
 
 		// Migration hook
 		HookEnsureVMNotMigrating: service.HookEnsureVMNotMigrating,

@@ -107,6 +107,7 @@ type Deps struct {
 	// ---- Disk expansion ----
 	PrepareFnOSSystemDiskExpansion    func(ctx context.Context, cloneDisk string, progressFn func(int, string)) error
 	PrepareWindowsSystemDiskExpansion func(ctx context.Context, cloneDisk string, progressFn func(int, string)) error
+	PrepareLinuxSystemDiskExpansion   func(ctx context.Context, cloneDisk string, progressFn func(int, string)) error
 
 	// ---- Migration hook ----
 	HookEnsureVMNotMigrating func(vmName, action string) error

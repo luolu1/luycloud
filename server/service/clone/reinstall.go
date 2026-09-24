@@ -221,6 +221,11 @@ func ReinstallVM(ctx context.Context, params *ReinstallParams, progressFn func(i
 			}
 		}
 	case "linux":
+		if cloneParams.DiskSize > 0 {
+			if err := D.PrepareLinuxSystemDiskExpansion(ctx, systemDisk.Path, progressFn); err != nil {
+				return err
+			}
+		}
 		progressFn(25, "正在重置 Linux 首次启动身份...")
 		if err := prepareLinuxCloneFirstBootIdentity(cloneParams, systemDisk.Path, progressFn); err != nil {
 			return err

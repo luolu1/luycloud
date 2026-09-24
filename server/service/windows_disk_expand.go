@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"kvm_console/logger"
+	"kvm_console/service/guestfs"
 	"kvm_console/utils"
 )
 
@@ -99,8 +100,8 @@ echo __FILESYSTEMS__
 list-filesystems
 GUESTFISH`, utils.ShellSingleQuote(diskPath), device, device, device, device)
 
-	// guestfish 检测磁盘属于 IO 操作，不设置自动超时
-	result := utils.ExecShellNoTimeout(script)
+	// guestfish 检测磁盘属于 IO 操作，不设置自动超时；经 guestfs 包注入 pmu=off 规避并具备崩溃自愈
+	result := guestfs.ExecShellNoTimeout(script)
 	if result.Error != nil {
 		return nil, fmt.Errorf("%s", result.Stderr)
 	}
@@ -117,8 +118,8 @@ GUESTFISH`, utils.ShellSingleQuote(diskPath), device, device, device, device)
 	}
 
 	metaScript := buildGuestfishPartitionMetaScript(diskPath, device, layout.Partitions)
-	// guestfish 检测磁盘属于 IO 操作，不设置自动超时
-	metaResult := utils.ExecShellNoTimeout(metaScript)
+	// guestfish 检测磁盘属于 IO 操作，不设置自动超时；经 guestfs 包注入 pmu=off 规避并具备崩溃自愈
+	metaResult := guestfs.ExecShellNoTimeout(metaScript)
 	if metaResult.Error != nil {
 		return nil, fmt.Errorf("%s", metaResult.Stderr)
 	}
@@ -412,8 +413,9 @@ func runWritableGuestfishOperation(ctx context.Context, diskPath string, command
 	}
 	b.WriteString("exit $guestfish_status\n")
 
-	// guestfish 磁盘扩容属于大 IO 操作，不设置自动超时，仅响应任务取消
-	result := utils.ExecShellContext(ctx, b.String())
+	// guestfish 磁盘扩容属于大 IO 操作，不设置自动超时，仅响应任务取消；
+	// 经 guestfs 包注入 pmu=off 规避并具备 appliance 崩溃自愈
+	result := guestfs.ExecShellContext(ctx, b.String())
 	if result.Error != nil {
 		for _, cleanupPath := range cleanupPaths {
 			_ = os.Remove(cleanupPath)

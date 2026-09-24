@@ -211,6 +211,17 @@ func ExecShellContext(ctx context.Context, command string) *CmdResult {
 	return ExecCommandContextWithTimeout(ctx, "bash", 0, "-c", command)
 }
 
+// ExecShellWithEnvNoTimeout 执行 Shell 命令并注入自定义环境变量，不设置自动超时。
+// extraEnv 形如 "KEY=VALUE"，会被 bash 及其子进程（如 guestfish）继承。
+func ExecShellWithEnvNoTimeout(extraEnv []string, command string) *CmdResult {
+	return ExecCommandWithEnvNoTimeout(extraEnv, "bash", "-c", command)
+}
+
+// ExecShellContextWithEnv 执行 Shell 命令并注入自定义环境变量，仅响应上下文取消，不设置自动超时。
+func ExecShellContextWithEnv(ctx context.Context, extraEnv []string, command string) *CmdResult {
+	return execCommandContextWithTimeoutEnv(ctx, "bash", 0, false, extraEnv, "-c", command)
+}
+
 // ExecShellContextWithTimeout 执行 Shell 命令（支持取消和超时）
 func ExecShellContextWithTimeout(ctx context.Context, command string, timeout time.Duration) *CmdResult {
 	return ExecCommandContextWithTimeout(ctx, "bash", timeout, "-c", command)
