@@ -9,6 +9,7 @@ import (
 
 	libvirt "github.com/digitalocean/go-libvirt"
 
+	"kvm_console/service/guestfs"
 	"kvm_console/service/libvirt_rpc"
 	"kvm_console/utils"
 )
@@ -62,12 +63,17 @@ func resolveTemplateBootType(templatePath, templateType, bootType string, bootVe
 	return normalized, bootVerified && normalized != ""
 }
 
-// DetectTemplateBootType detects the boot type of a template disk image.
+// DetectTemplateBootType detects the boot type of a template/disk image.
+//
+// virt-filesystems 属于 libguestfs 系列命令，在嵌套虚拟化宿主机上会因 appliance
+// 内部 qemu 设置 MSR 0x345 而 SIGABRT（signal 6）。故通过 guestfs 包执行以注入
+// pmu=off 规避并复用崩溃自愈；否则裸调用崩溃后 result.Error != nil 会误落到 bios，
+// 导致 UEFI 磁盘被错判为 BIOS 引导。
 func DetectTemplateBootType(templatePath string) string {
-	result := utils.ExecShellWithTimeout(fmt.Sprintf(
+	result := guestfs.ExecShellNoTimeout(fmt.Sprintf(
 		"virt-filesystems -a %s --filesystems --long 2>/dev/null | awk 'tolower($0) ~ /(^|[[:space:]])vfat([[:space:]]|$)|efi/ {found=1} END {if (found) print \"uefi\"; else print \"bios\"}'",
 		utils.ShellSingleQuote(templatePath),
-	), templateBootDetectTimeout)
+	))
 	if result.Error == nil {
 		bootType := normalizeTemplateBootType(result.Stdout)
 		if bootType != "" {

@@ -14,6 +14,7 @@ import (
 	"kvm_console/service"
 	"kvm_console/service/arch"
 	"kvm_console/service/ip_resolver"
+	"kvm_console/service/template"
 	"kvm_console/service/vm_xml"
 	"kvm_console/taskqueue"
 	"kvm_console/utils"
@@ -198,11 +199,12 @@ func ImportDiskByPath(ctx context.Context, params *ImportDiskByPathParams, progr
 	if normalizedBootType == vm_xml.VMBootTypeUEFI || normalizedBootType == vm_xml.VMBootTypeUEFISecure {
 		needUEFI = true
 	} else if params.BootType == "" || params.BootType == "bios" {
-		efiCheck := utils.ExecShell(fmt.Sprintf(
-			"virt-filesystems -a '%s' --filesystems --long 2>/dev/null | head -5 | grep -q 'vfat' && echo 'uefi'",
-			destDiskPath))
-		if efiCheck.Error == nil && strings.TrimSpace(efiCheck.Stdout) == "uefi" {
+		// 自动检测：经 guestfs 包注入 pmu=off 规避，嵌套宿主机上不会崩溃误判。
+		// 检测为 UEFI 时必须同步把 normalizedBootType 提升为 UEFI，否则下游 linux_guest.go
+		// 仍以 "bios" 调用 ApplyVMBootTypeToDomainXML，会把已生成的 UEFI loader/nvram 剥回 BIOS。
+		if template.DetectTemplateBootType(destDiskPath) == "uefi" {
 			needUEFI = true
+			normalizedBootType = vm_xml.VMBootTypeUEFI
 		}
 	}
 

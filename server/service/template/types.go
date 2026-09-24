@@ -15,7 +15,6 @@ import (
 const (
 	vmTemplateSourceMetadataURI  = "https://kvm-console.local/template-source"
 	vmTemplateSourceMetadataKey  = "template-source"
-	templateBootDetectTimeout    = 2 * time.Minute
 	TemplateDeleteModeCascade    = "cascade"
 	TemplateDeleteModePromote    = "promote_children"
 	TemplateDeleteModePromoteHot = "promote_children_hot"
