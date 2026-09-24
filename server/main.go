@@ -18,6 +18,7 @@ import (
 	clonepkg "kvm_console/service/clone"
 	"kvm_console/service/guest_agent"
 	guestautomation "kvm_console/service/guest_automation"
+	"kvm_console/service/guestfs"
 	"kvm_console/service/libvirt_rpc"
 	netpkg "kvm_console/service/network"
 	"kvm_console/service/snapshot"
@@ -76,6 +77,9 @@ func main() {
 	defer logger.Close()
 
 	logger.App.Info("配置初始化完成")
+
+	// 输出 libguestfs 嵌套规避初始状态并预生成 qemu 包装脚本
+	guestfs.LogStartupState()
 
 	// 初始化数据库
 	model.InitDB()

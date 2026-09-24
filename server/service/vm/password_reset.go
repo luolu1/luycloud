@@ -10,8 +10,8 @@ import (
 
 	"kvm_console/model"
 	"kvm_console/service/guest_agent"
+	"kvm_console/service/guestfs"
 	"kvm_console/taskqueue"
-	"kvm_console/utils"
 )
 
 const (
@@ -138,7 +138,7 @@ func ResetLinuxPassword(ctx context.Context, params *ResetLinuxPasswordParams, p
 			progressFn(25, "正在离线修改虚拟机密码...")
 			passwordArg := fmt.Sprintf("%s:password:%s", strings.TrimSpace(params.Username), params.Password)
 			// virt-customize 需要读写整个磁盘镜像，属于大 IO 操作，不设置自动超时
-			result := utils.ExecCommandSensitiveNoTimeout("virt-customize", "-a", vm.DiskPath, "--password", passwordArg, "--selinux-relabel")
+			result := guestfs.ExecSensitiveNoTimeout("virt-customize", "-a", vm.DiskPath, "--password", passwordArg, "--selinux-relabel")
 			if result.Error != nil {
 				return fmt.Errorf("离线重置密码失败: %s", strings.TrimSpace(result.Stderr))
 			}
@@ -181,7 +181,7 @@ func SubmitResetLinuxPasswordTask(params *ResetLinuxPasswordParams, operator str
 func stageWindowsPasswordReset(diskPath, username, password string) error {
 	scriptContent := buildWindowsPasswordResetScript(username, password)
 	// virt-customize 需要读写整个磁盘镜像，属于大 IO 操作，不设置自动超时
-	writeResult := utils.ExecCommandSensitiveNoTimeout(
+	writeResult := guestfs.ExecSensitiveNoTimeout(
 		"virt-customize",
 		"-a", diskPath,
 		"--mkdir", "/ProgramData/kvm-console",
@@ -208,7 +208,7 @@ func stageWindowsPasswordReset(diskPath, username, password string) error {
 	}
 
 	// virt-win-reg 需要读写整个磁盘镜像，属于大 IO 操作，不设置自动超时
-	mergeResult := utils.ExecCommandNoTimeout("virt-win-reg", "--merge", diskPath, regPath)
+	mergeResult := guestfs.ExecNoTimeout("virt-win-reg", "--merge", diskPath, regPath)
 	if mergeResult.Error != nil {
 		return fmt.Errorf("写入 Windows 注册表失败: %s", strings.TrimSpace(mergeResult.Stderr))
 	}

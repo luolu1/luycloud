@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"kvm_console/logger"
+	"kvm_console/service/guestfs"
 	"kvm_console/utils"
 )
 
@@ -118,7 +119,7 @@ func prepareLinuxNoCloudInit(params *CloneParams, cloneDisk string, progressFn f
 	}
 
 	// virt-customize 需要读写整个磁盘镜像，属于大 IO 操作，不设置自动超时
-	result := utils.ExecCommandNoTimeout("virt-customize", args...)
+	result := guestfs.ExecNoTimeout("virt-customize", args...)
 	if result.Error != nil {
 		return fmt.Errorf("Linux 克隆离线初始化失败: %s", D.FirstNonEmpty(result.Stderr, result.Error.Error()))
 	}

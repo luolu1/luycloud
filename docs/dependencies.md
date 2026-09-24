@@ -12,6 +12,19 @@
 | Open vSwitch（既有依赖） | `ovs-ofctl`、`ovsdb-client` | 端口安全 OpenFlow 多表、packet meter、Interface packet policing、OVSDB 端口事件与兼容性探测 | `server/service/network/portsecurity/`、`server/service/compatibility/` |
 | iproute2、Open vSwitch、systemd（既有依赖） | `tc`、`ip`、`ovs-vsctl`、`ovs-ofctl`、`systemd-run` | 端口镜像的双向报文复制、veth 注入、OVS 转发和短时自动回滚看门狗 | `server/service/network/portmirror/` |
 | curl / wget（既有下载能力） | `curl`、`wget` | 首次安装当前目录缺少有效兼容性脚本时下载脚本；优先 curl，回退 wget | `install.sh` |
+| libguestfs-tools、qemu-system-x86_64（既有依赖） | `virt-customize`、`guestfish`、`virt-cat`、`virt-ls`、`virt-filesystems`、`virt-win-reg` | 克隆/模板/密码重置阶段离线读写来宾磁盘镜像 | `server/service/clone/`、`server/service/template/linux_deps.go`、`server/service/vm/password_reset.go` |
+
+## 嵌套虚拟化下的 libguestfs 规避（qemu-pmuoff.sh）
+
+当宿主机自身运行在虚拟机中（嵌套虚拟化）且架构为 x86_64 时，libguestfs 启动的内部 appliance qemu 会因启用 vPMU 而尝试设置 MSR `0x345` (IA32_PERF_CAPABILITIES)，该写入被上层 KVM 拒绝，导致内部 qemu `SIGABRT`，表现为 `guestfs_launch failed`（克隆、模板预处理、离线密码重置等全部失败）。
+
+规避方式由 `server/service/guestfs` 统一处理，对所有 libguestfs 命令生效：
+
+- 仅在「嵌套 + x86_64」宿主机上自动生成一个 qemu 包装脚本 `qemu-pmuoff.sh`，为其 `-cpu` 追加 `pmu=off`；非嵌套 / 非 x86_64 宿主机行为完全不变。
+- 通过环境变量 `LIBGUESTFS_HV` 指向该包装脚本，并强制 `LIBGUESTFS_BACKEND=direct`（direct 后端才会使用自定义 HV）。
+- 脚本默认生成目录为 `/var/lib/kvm-console/bin`，可用环境变量 `KVM_LIBGUESTFS_WRAPPER_DIR` 覆盖；脚本运行时通过 `command -v qemu-system-x86_64` 定位真实 qemu（回退 `/usr/bin/qemu-system-x86_64`）。
+- 依赖 `libguestfs-tools` 与 `qemu-system-x86_64`（均为既有依赖），未新增系统软件包。生成失败时记录告警并降级为默认行为。
+
 
 ## Linux 来宾磁盘自动化依赖
 

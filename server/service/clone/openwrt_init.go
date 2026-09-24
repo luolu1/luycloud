@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"kvm_console/logger"
+	"kvm_console/service/guestfs"
 	"kvm_console/utils"
 )
 
@@ -78,7 +79,7 @@ func cloneOpenWrtExt4(params *CloneParams, cloneDisk, hostname, staticIP string,
 	}
 
 	// virt-customize 需要读写整个磁盘镜像，属于大 IO 操作，不设置自动超时
-	result := utils.ExecCommandNoTimeout("virt-customize", args...)
+	result := guestfs.ExecNoTimeout("virt-customize", args...)
 	if result.Error != nil {
 		return fmt.Errorf("OpenWrt 克隆初始化失败: %s", D.FirstNonEmpty(result.Stderr, result.Error.Error()))
 	}
@@ -142,7 +143,7 @@ upload %s /upper/etc/config/system
 	}
 
 	// 执行 guestfish（读写磁盘镜像，属于大 IO 操作，不设置自动超时）
-	result := utils.ExecCommandNoTimeout("guestfish", "--file", scriptPath)
+	result := guestfs.ExecNoTimeout("guestfish", "--file", scriptPath)
 	if result.Error != nil {
 		return fmt.Errorf("OpenWrt squashfs 克隆初始化失败: %s", D.FirstNonEmpty(result.Stderr, result.Error.Error()))
 	}
@@ -155,7 +156,7 @@ upload %s /upper/etc/config/system
 // 如果存在 squashfs，返回 ext4 overlay 分区的设备路径（如 /dev/sda3）
 // 否则返回空字符串
 func detectSquashfsOverlay(diskPath string) string {
-	result := utils.ExecCommand("virt-filesystems", "-a", diskPath, "--long", "--filesystems")
+	result := guestfs.Exec("virt-filesystems", "-a", diskPath, "--long", "--filesystems")
 	if result.Error != nil {
 		return ""
 	}

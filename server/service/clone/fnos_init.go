@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"kvm_console/service/guestfs"
 	"kvm_console/utils"
 )
 
@@ -47,7 +48,7 @@ func cloneFnOS(params *CloneParams, cloneDisk string, progressFn func(int, strin
 	}
 
 	// virt-customize 需要读写整个磁盘镜像，属于大 IO 操作，不设置自动超时
-	result := utils.ExecCommandNoTimeout("virt-customize", customizeArgs...)
+	result := guestfs.ExecNoTimeout("virt-customize", customizeArgs...)
 	if result.Error != nil {
 		return fmt.Errorf("FnOS 首次登录信息注入失败: %s", result.Stderr)
 	}

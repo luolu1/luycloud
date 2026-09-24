@@ -56,12 +56,21 @@ func ExecCommandContextWithTimeout(ctx context.Context, name string, timeout tim
 }
 
 func execCommandContextWithTimeout(ctx context.Context, name string, timeout time.Duration, sensitive bool, args ...string) *CmdResult {
+	return execCommandContextWithTimeoutEnv(ctx, name, timeout, sensitive, nil, args...)
+}
+
+// execCommandContextWithTimeoutEnv 在标准执行流程基础上，额外注入自定义环境变量。
+// extraEnv 为形如 "KEY=VALUE" 的切片，追加在 LANG/LC_ALL 之后；为空则行为与原函数一致。
+func execCommandContextWithTimeoutEnv(ctx context.Context, name string, timeout time.Duration, sensitive bool, extraEnv []string, args ...string) *CmdResult {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	cmd := exec.Command(name, args...)
 	// 强制使用 C 语言环境，确保 virsh 等命令输出英文便于解析
 	cmd.Env = append(os.Environ(), "LANG=C", "LC_ALL=C")
+	if len(extraEnv) > 0 {
+		cmd.Env = append(cmd.Env, extraEnv...)
+	}
 	prepareProcessGroup(cmd)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -164,6 +173,22 @@ func ExecCommandNoTimeout(name string, args ...string) *CmdResult {
 // ExecCommandSensitiveNoTimeout 执行包含密码、令牌等敏感参数的 IO 操作，不设置自动超时，日志不记录参数正文。
 func ExecCommandSensitiveNoTimeout(name string, args ...string) *CmdResult {
 	return execCommandContextWithTimeout(context.Background(), name, 0, true, args...)
+}
+
+// ExecCommandWithEnv 执行系统命令（带 30s 超时），并注入自定义环境变量。
+// extraEnv 形如 "KEY=VALUE"，用于 libguestfs 等需要额外环境变量的场景。
+func ExecCommandWithEnv(extraEnv []string, name string, args ...string) *CmdResult {
+	return execCommandContextWithTimeoutEnv(context.Background(), name, 30*time.Second, false, extraEnv, args...)
+}
+
+// ExecCommandWithEnvNoTimeout 执行命令并注入自定义环境变量，不设置自动超时（大 IO 操作）。
+func ExecCommandWithEnvNoTimeout(extraEnv []string, name string, args ...string) *CmdResult {
+	return execCommandContextWithTimeoutEnv(context.Background(), name, 0, false, extraEnv, args...)
+}
+
+// ExecCommandSensitiveWithEnvNoTimeout 执行含敏感参数的命令并注入自定义环境变量，不设置自动超时，日志不记录参数正文。
+func ExecCommandSensitiveWithEnvNoTimeout(extraEnv []string, name string, args ...string) *CmdResult {
+	return execCommandContextWithTimeoutEnv(context.Background(), name, 0, true, extraEnv, args...)
 }
 
 // ExecShellNoTimeout 执行 Shell 命令，不设置自动超时（如文件复制、网络传输等大 IO 操作）。
