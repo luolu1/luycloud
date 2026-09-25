@@ -1,7 +1,7 @@
 /**
  * 顶部导航栏（与侧边栏贴边无缝衔接）
- * - 承载历史页面标签栏（固定顶部）
- * - 左侧为小屏菜单按钮（≤820px 显示）
+ * - 左侧展示当前页面标题，作为简洁的页面标识
+ * - 左侧起始为小屏菜单按钮（≤820px 显示）
  * - 右侧为开源版链接 + 主题切换按钮 + 预留扩展插槽（后续可放搜索、通知等）
  */
 import { type ReactNode } from 'react'
@@ -11,26 +11,25 @@ import { useTheme } from '@/hooks/useTheme'
 import { CLOUD_TYPES, ROLES, THEME_MODES, EXTERNAL_LINKS } from '@/config/constants'
 import { useUserStore } from '@/stores/user'
 import { useTaskStore } from '@/stores/task'
-import { usePageTabsStore } from '@/stores/pageTabs'
 import { useNavigate } from 'react-router'
 import { logoutSession } from '@/api/auth'
-import PageTabsBar from './PageTabsBar'
 
 interface TopBarProps {
   /** 小屏打开侧边栏抽屉 */
   onOpenMobile: () => void
+  /** 当前页面标题（作为顶栏左侧的页面标识） */
+  title?: string
   /** 右侧扩展区内容（可选，保持可拓展性） */
   extra?: ReactNode
 }
 
-export default function TopBar({ onOpenMobile, extra }: TopBarProps) {
+export default function TopBar({ onOpenMobile, title, extra }: TopBarProps) {
   const navigate = useNavigate()
   const { isDark, setThemeMode } = useTheme()
   const username = useUserStore((s) => s.username)
   const role = useUserStore((s) => s.role)
   const cloudType = useUserStore((s) => s.cloudType)
   const logout = useUserStore((s) => s.logout)
-  const resetTabs = usePageTabsStore((s) => s.reset)
   const resetTasks = useTaskStore((s) => s.reset)
 
   const userRole = role === ROLES.admin
@@ -52,7 +51,6 @@ export default function TopBar({ onOpenMobile, extra }: TopBarProps) {
           // 即使服务端暂时不可用，也应清理本地登录态。
         } finally {
           logout()
-          resetTabs()
           resetTasks()
           navigate('/login', { replace: true })
         }
@@ -67,7 +65,8 @@ export default function TopBar({ onOpenMobile, extra }: TopBarProps) {
         <IconMenu />
       </div>
 
-      <PageTabsBar />
+      {/* 当前页面标题：替代原标签栏，形成简洁的页面标识 */}
+      {title && <h1 className="qvm-topbar-title">{title}</h1>}
 
       <div className="qvm-topbar-extra">
         {extra}

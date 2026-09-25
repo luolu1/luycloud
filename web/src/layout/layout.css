@@ -558,65 +558,22 @@ body[theme-mode='dark'] .qvm-sponsor-benefits-title {
   box-shadow: none;
 }
 
-/* ============ 页面标签页栏（位于顶部导航栏内） ============ */
-.qvm-tabs-bar {
-  flex: 1;
+/* ============ 顶栏当前页面标题（替代原标签栏的位置感） ============ */
+.qvm-topbar-title {
+  margin: 0;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.qvm-tabs-bar::-webkit-scrollbar {
-  display: none;
-}
-.qvm-pg-tab {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 13px;
-  border-radius: 10px;
-  flex: none;
-  background: var(--qvm-card-bg);
-  border: 1px solid var(--qvm-stroke);
-  font-size: 12.5px;
-  color: var(--qvm-text-1);
-  cursor: pointer;
-  transition: all 0.16s;
-  user-select: none;
-}
-.qvm-pg-tab:hover {
-  color: var(--qvm-text-0);
-  border-color: var(--qvm-stroke-strong);
-}
-.qvm-pg-tab.on {
-  background: var(--qvm-active-bg);
-  color: var(--qvm-text-0);
+  flex: 1;
+  font-size: 16px;
   font-weight: 600;
-  border-color: var(--qvm-acc-stroke);
-  box-shadow: 0 0 16px rgba(45, 212, 191, 0.14);
+  letter-spacing: 0.2px;
+  color: var(--qvm-text-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.qvm-pg-tab.pin {
-  color: var(--qvm-acc-ink);
-  border-color: var(--qvm-acc-stroke);
-  background: var(--qvm-acc-bg);
-}
-.qvm-tab-x {
-  width: 16px;
-  height: 16px;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--qvm-text-2);
-  flex: none;
-  transition: all 0.15s;
-}
-.qvm-tab-x:hover {
-  color: var(--qvm-danger);
-  background: rgba(251, 113, 133, 0.12);
+/* 深色下大面积标题避免近白刺眼，改用柔和灰 */
+body[theme-mode='dark'] .qvm-topbar-title {
+  color: #b8c1cf;
 }
 
 /* ============ 底部常驻任务栏 ============ */

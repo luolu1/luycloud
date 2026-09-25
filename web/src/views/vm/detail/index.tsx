@@ -6,7 +6,7 @@
  * - 底部监控图表：实时监控 + 历史查询（近 24 小时），磁盘 IO 双单位
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { Button, Tabs, TabPane, Tag, Toast, Tooltip } from '@douyinfe/semi-ui'
 import {
   IconArrowLeft,
@@ -23,13 +23,11 @@ import type { VmPowerAction, SnapshotQuota } from '@/api/vm'
 import { lockVm, operateVm, rescueVm, unlockVm } from '@/api/vm'
 import { ROLES, CLOUD_TYPES } from '@/config/constants'
 import { useUserStore } from '@/stores/user'
-import { usePageTabsStore } from '@/stores/pageTabs'
 import { useVmStore } from '@/stores/vm'
 import { useVmDetailSSE } from '@/hooks/useVmDetailSSE'
 import {
   canResetVmPassword,
   openVncWindow,
-  vmStatusDot,
   detailToListItem,
 } from './utils'
 import { shouldClearPowerLoadingAfterAck } from '../utils'
@@ -53,7 +51,6 @@ type DialogState = 'remark' | 'reinstall' | 'resetPassword' | null
 
 export default function VmDetailPage() {
   const navigate = useNavigate()
-  const location = useLocation()
   const params = useParams<{ id: string }>()
   const vmName = useMemo(() => params.id || '', [params.id])
   const role = useUserStore((s) => s.role)
@@ -72,15 +69,13 @@ export default function VmDetailPage() {
   const [showBackToTop, setShowBackToTop] = useState(false)
   const topRef = useRef<HTMLDivElement>(null)
 
-  // ============ 页面标签与最近访问 ============
-  const openTab = usePageTabsStore((s) => s.openTab)
+  // ============ 最近访问记录 ============
   const addVisitedVm = useVmStore((s) => s.addVisitedVm)
   useEffect(() => {
     if (vmData?.name) {
-      openTab({ key: location.pathname, title: vmData.name, dot: vmStatusDot(vmData.status) })
       addVisitedVm({ id: vmData.name, name: vmData.name })
     }
-  }, [vmData?.name, vmData?.status, location.pathname, openTab, addVisitedVm])
+  }, [vmData?.name, addVisitedVm])
 
   // 状态变化时复位操作按钮 loading
   useEffect(() => {
