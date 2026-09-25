@@ -153,6 +153,7 @@ func ListVMs(options ...VMListOptions) ([]VmInfo, error) {
 		vm.DiskSize = diskInfo.TotalSizeText()
 		vm.Template = diskInfo.Template
 		vm.IsLinkedClone = diskInfo.Template != ""
+		vm.OSType, vm.OSVersion = resolveVMOSFallback(vm.Template)
 
 		// 仅在需要时查询列表页未直接使用的网卡 / 带宽信息，避免每台 VM 额外触发多次 virsh 调用。
 		if listOptions.IncludeNetworkInfo {

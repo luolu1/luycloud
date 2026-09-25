@@ -108,6 +108,15 @@ func GetVM(name string) (*VmDetail, error) {
 		vm.VCPU = configVCPU
 	}
 	vm.OSType = DetectVMOSType(vm.Template, xmlStr)
+	// 优先展示已上报的精确版本（last-known），否则回退模板分类。
+	if _, cachedVersion := readVMCacheOSInfo(name); strings.TrimSpace(cachedVersion) != "" {
+		vm.OSVersion = cachedVersion
+	} else if _, osVersion := resolveVMOSFallback(vm.Template); osVersion != "" {
+		vm.OSVersion = osVersion
+	}
+	if vm.Status == "running" {
+		ScheduleVMOSInfoProbe(name)
+	}
 	vm.BootType = vm_xml.ParseVMBootTypeFromDomainXML(xmlStr)
 	vm.Arch = vm_xml.ParseVMArchFromDomainXML(xmlStr)
 	vm.MachineType = vm_xml.ParseVMMachineTypeFromDomainXML(xmlStr)

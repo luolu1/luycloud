@@ -118,6 +118,7 @@ func startVM(name string, fixOnReboot bool) error {
 					if err := applyVMRuntimeNetworkState(name); err != nil {
 						return fmt.Errorf("恢复运行成功，但%w", err)
 					}
+					ScheduleVMOSInfoProbe(name)
 					return nil
 				}
 				logger.Libvirt.Warn("恢复虚拟机失败，降级为 virsh", "domain", name, "error", err)
@@ -130,6 +131,7 @@ func startVM(name string, fixOnReboot bool) error {
 			if err := applyVMRuntimeNetworkState(name); err != nil {
 				return fmt.Errorf("恢复运行成功，但%w", err)
 			}
+			ScheduleVMOSInfoProbe(name)
 			return nil
 		case "crashed", "pmsuspended":
 			logger.App.Warn("虚拟机处于异常状态，尝试强制关闭后重启", "vm", name, "state", state)
@@ -220,6 +222,7 @@ func startVM(name string, fixOnReboot bool) error {
 		}
 		UpdateVMRuntimeState(name, "running", time.Now())
 	}
+	ScheduleVMOSInfoProbe(name)
 	return nil
 }
 
@@ -302,6 +305,7 @@ func RebootVM(name string) error {
 		return fmt.Errorf("重启失败: %w", err)
 	}
 	ResetVMContinuousRuntime(name, time.Now())
+	ScheduleVMOSInfoProbe(name)
 	if err := applyVMRuntimeNetworkState(name); err != nil {
 		return fmt.Errorf("重启成功，但%w", err)
 	}
@@ -321,6 +325,7 @@ func ResetVM(name string) error {
 		return fmt.Errorf("重置失败: %w", err)
 	}
 	ResetVMContinuousRuntime(name, time.Now())
+	ScheduleVMOSInfoProbe(name)
 	if err := applyVMRuntimeNetworkState(name); err != nil {
 		return fmt.Errorf("重置成功，但%w", err)
 	}

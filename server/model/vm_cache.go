@@ -15,6 +15,8 @@ type VMCache struct {
 	GroupName     string    `json:"group_name" gorm:"index;size:128"`
 	TagsJSON      string    `json:"-" gorm:"type:text"`
 	Template      string    `json:"template" gorm:"size:255"`
+	OSType        string    `json:"os_type" gorm:"size:32"`
+	OSVersion     string    `json:"os_version" gorm:"size:128"`
 	DiskSizeText  string    `json:"disk_size_text" gorm:"size:64"`
 	CreatedAtText string    `json:"created_at_text" gorm:"size:32"`
 	Autostart     bool      `json:"autostart"`

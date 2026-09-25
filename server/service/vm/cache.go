@@ -128,6 +128,8 @@ func vmInfoFromCacheRecord(record model.VMCache, options VMListOptions) VmInfo {
 		MaxMemory:     record.MaxMemoryMB,
 		DiskSize:      record.DiskSizeText,
 		Template:      record.Template,
+		OSType:        record.OSType,
+		OSVersion:     record.OSVersion,
 		Autostart:     record.Autostart,
 		CreatedAt:     record.CreatedAtText,
 		InRescue:      record.InRescue,
@@ -392,6 +394,27 @@ func defaultVMCacheBuildRecordFromHost(name string, syncedAt time.Time) (model.V
 	record.DiskSizeText = diskInfo.TotalSizeText()
 	record.Template = diskInfo.Template
 
+	// 全量同步为 UpdateAll 覆盖写，若构建记录时不读取已有的系统版本，
+	// 精确 QGA 版本（last-known）会在下次同步时被清空，因此在此保留旧值。
+	osType, osVersion := resolveVMOSFallback(record.Template)
+	if prevType, prevVer := readVMCacheOSInfo(name); prevType != "" || prevVer != "" {
+		if prevType != "" {
+			osType = prevType
+		}
+		if prevVer != "" {
+			osVersion = prevVer
+		}
+	}
+	record.OSType = osType
+	record.OSVersion = osVersion
+
+	// 运行中且尚无精确版本时，异步触发一次 QGA 探测补齐 last-known。
+	// 覆盖"服务重启后存量运行 VM 从未经历生命周期事件"的场景；
+	// 内部去重 + QGA 通道预检，无 agent 的 VM 不会空轮询。
+	if strings.EqualFold(strings.TrimSpace(record.Status), "running") && strings.TrimSpace(osVersion) == "" {
+		ScheduleVMOSInfoProbe(name)
+	}
+
 	netInfo := GetVMNetworkInfo(name)
 	record.NicModel = netInfo.NicModel
 	record.MacAddress = netInfo.MAC
@@ -455,6 +478,42 @@ func SyncVMCacheOwner(name string) {
 		return
 	}
 	UpdateVMCacheOwner(name, D.FirstNonEmpty(strings.TrimSpace(D.FindVMOwner(name)), "admin"))
+}
+
+// UpdateVMCacheOSInfo 更新单台虚拟机缓存的系统类型/版本（targeted 单列更新，避免全量覆盖）。
+// 空值列保持原值；两者都为空时不做更新。
+func UpdateVMCacheOSInfo(name, osType, osVersion string) {
+	name = strings.TrimSpace(name)
+	if name == "" || model.DB == nil {
+		return
+	}
+	updates := map[string]interface{}{}
+	if osType = strings.TrimSpace(osType); osType != "" {
+		updates["os_type"] = osType
+	}
+	if osVersion = strings.TrimSpace(osVersion); osVersion != "" {
+		updates["os_version"] = osVersion
+	}
+	if len(updates) == 0 {
+		return
+	}
+	if err := model.DB.Model(&model.VMCache{}).Where("name = ?", name).Updates(updates).Error; err != nil {
+		logger.App.Warn("更新虚拟机缓存系统信息失败", "vm", name, "error", err)
+	}
+}
+
+// readVMCacheOSInfo 读取已有缓存记录中的系统类型/版本（last-known）。
+// 记录不存在或 model.DB 未初始化时返回空值，不报错。
+func readVMCacheOSInfo(name string) (osType, osVersion string) {
+	name = strings.TrimSpace(name)
+	if name == "" || model.DB == nil {
+		return "", ""
+	}
+	var record model.VMCache
+	if err := model.DB.Select("os_type", "os_version").Where("name = ?", name).First(&record).Error; err != nil {
+		return "", ""
+	}
+	return record.OSType, record.OSVersion
 }
 
 func SyncVMCacheOwnersForAssignment(username string, assignedVMs []string) {

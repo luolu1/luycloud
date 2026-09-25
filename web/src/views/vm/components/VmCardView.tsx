@@ -7,13 +7,12 @@ import { IllustrationNoContent, IllustrationNoContentDark } from '@douyinfe/semi
 import { IconDesktop, IconLock, IconWrench } from '@douyinfe/semi-icons'
 import type { VmListItem, VmPowerAction } from '@/api/vm'
 import { formatRuntime } from '@/utils/format'
-import { vmConfigText } from '../utils'
+import { vmConfigText, vmOsText, vmOsDotKind, shouldOpenVmDetail } from '../utils'
 import VmStatusIcon from './VmStatusIcon'
 import VmResourceBars from './VmResourceBars'
 import VmIpCell from './VmIpCell'
 import VmActionsCell, { type VmMenuCommand } from './VmActionsCell'
 import VmTagsEditor from './VmTagsEditor'
-import { shouldOpenVmDetail } from '../utils'
 
 interface VmCardViewProps {
   vms: VmListItem[]
@@ -129,6 +128,18 @@ export default function VmCardView({
               <span className="qvm-vcard-label">模板</span>
               <span className="qvm-vcard-value" title={vm.template || ''}>
                 {vm.template || '-'}
+              </span>
+            </div>
+            <div className="qvm-vcard-row">
+              <span className="qvm-vcard-label">系统</span>
+              <span
+                className="qvm-vcard-value qvm-vcard-os"
+                title={vm.os_version || vm.os_type || ''}
+              >
+                {vmOsDotKind(vm.os_type) && (
+                  <i className={`qvm-os-dot ${vmOsDotKind(vm.os_type)}`} />
+                )}
+                {vmOsText(vm)}
               </span>
             </div>
             <div className="qvm-vcard-row">

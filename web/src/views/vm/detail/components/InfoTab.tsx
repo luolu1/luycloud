@@ -267,7 +267,13 @@ export default function InfoTab({
             </Tooltip>
           )}
         </Row>
-        <Row label="操作系统">{vm.os_type || '-'}</Row>
+        <Row label="操作系统">
+          {vm.os_version ? (
+            <span title={vm.os_type || undefined}>{vm.os_version}</span>
+          ) : (
+            vm.os_type || '-'
+          )}
+        </Row>
         <Row label="机器类型">{vm.machine_type || '-'}</Row>
         <Row label="模板来源">{vm.template || '-'}</Row>
         <Row label="备注">

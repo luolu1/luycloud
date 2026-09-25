@@ -21,6 +21,8 @@ export interface VmListItem {
   ips?: string[]
   disk_size: string // 如 "20 GB"
   template: string
+  os_type?: string // linux / windows / fnos
+  os_version?: string // 系统版本: QGA 精确版本或模板分类回退
   network: string
   autostart: boolean
   cpu_percent: number
@@ -438,6 +440,7 @@ export interface VmDetailInfo {
   continuous_running_since: string
   uuid?: string
   os_type: string // linux / windows / fnos ...
+  os_version?: string // 系统版本: QGA 精确版本或模板分类回退
   boot_type?: string
   arch?: string
   machine_type: string // q35 / i440fx / virt

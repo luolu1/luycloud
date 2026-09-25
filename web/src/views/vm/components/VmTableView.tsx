@@ -16,7 +16,7 @@ import VmResourceBars from './VmResourceBars'
 import VmIpCell from './VmIpCell'
 import VmActionsCell, { type VmMenuCommand } from './VmActionsCell'
 import VmTagsEditor from './VmTagsEditor'
-import { shouldOpenVmDetail } from '../utils'
+import { shouldOpenVmDetail, vmOsText, vmOsDotKind } from '../utils'
 
 export type VmSortField = 'name' | 'resource' | 'ip'
 export type VmSortOrder = 'ascend' | 'descend'
@@ -112,7 +112,23 @@ export default function VmTableView({
         className: 'col-hide-md',
         onHeaderCell: () => ({ className: 'col-hide-md' }),
         ellipsis: true,
-        render: (text) => <span className="qvm-tpl-name">{text || '-'}</span>,
+        render: (text, vm) => {
+          const os = vmOsText(vm)
+          const dot = vmOsDotKind(vm.os_type)
+          return (
+            <div className="qvm-tpl-cell">
+              <span className="qvm-tpl-name" title={text || undefined}>
+                {text || '-'}
+              </span>
+              {os !== '-' && (
+                <span className="qvm-tpl-os" title={vm.os_version || vm.os_type || undefined}>
+                  {dot && <i className={`qvm-os-dot ${dot}`} />}
+                  {os}
+                </span>
+              )}
+            </div>
+          )
+        },
       },
       {
         title: '标签',

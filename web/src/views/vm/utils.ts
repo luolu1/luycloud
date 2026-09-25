@@ -51,6 +51,20 @@ export function vmConfigText(vm: VmListItem): string {
   return `${vm.vcpu}C / ${formatMemoryGB(vm.memory)} / ${vm.disk_size || '-'}`
 }
 
+/** 系统版本显示文本：优先精确版本，回退系统类型，再回退 '-' */
+export function vmOsText(vm: VmListItem): string {
+  return vm.os_version || vm.os_type || '-'
+}
+
+/** 系统类型 → 色点样式修饰类（linux/windows/fnos），未知返回空串 */
+export function vmOsDotKind(osType?: string): string {
+  const t = (osType || '').toLowerCase()
+  if (t === 'windows') return 'win'
+  if (t === 'fnos') return 'fnos'
+  if (t === 'linux') return 'linux'
+  return ''
+}
+
 /** 解析 "20 GB" 之类的磁盘容量文本为 GB 整数 */
 export function parseDiskSizeGB(value?: string): number {
   const text = `${value || ''}`.trim()

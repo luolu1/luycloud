@@ -33,6 +33,8 @@ type VmInfo struct {
 	IPs                      []string             `json:"ips"`               // 所有 IP 地址（IPv4 + IPv6，去重）
 	DiskSize                 string               `json:"disk_size"`         // 磁盘占用
 	Template                 string               `json:"template"`          // 模板来源
+	OSType                   string               `json:"os_type"`           // 系统类型: linux/windows/fnos
+	OSVersion                string               `json:"os_version"`        // 系统版本: QGA 精确版本或模板分类回退
 	Network                  string               `json:"network"`           // 网络模式
 	NicModel                 string               `json:"nic_model"`         // 网卡模型: virtio/e1000e/rtl8139
 	Autostart                bool                 `json:"autostart"`         // 开机自启
@@ -73,7 +75,6 @@ type VmDetail struct {
 	UUID             string                        `json:"uuid"`         // 虚拟机 UUID
 	VNCPort          string                        `json:"vnc_port"`     // VNC 端口
 	Snapshots        []string                      `json:"snapshots"`    // 快照列表
-	OSType           string                        `json:"os_type"`      // 系统类型
 	BootType         string                        `json:"boot_type"`    // 引导方式: bios/uefi/uefi-secure
 	BootOrder        []string                      `json:"boot_order"`   // 引导顺序（OS 级别: hd, cdrom, network）
 	BootDevices      []BootDevice                  `json:"boot_devices"` // 所有可引导设备列表
