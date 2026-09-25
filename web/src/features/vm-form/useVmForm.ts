@@ -258,10 +258,14 @@ export function useVmForm({ isEdit, registration, hostArch }: UseVmFormParams) {
       setForm((prev) => {
         const next = { ...prev, os_type: osType, os_variant: '' }
         if (osType === 'windows') {
-          if (shouldUseBIOSForI440FXWindows(next, isEdit)) {
-            next.boot_type = 'bios'
-          } else if (!bootTypeTouchedRef.current) {
-            next.boot_type = 'uefi'
+          // 导入模式下引导固件由后端按磁盘实际情况自动识别（BIOS/UEFI），
+          // 不能在此强制 uefi，否则会绕过后端自动探测导致 BIOS 镜像被误配为 UEFI+安全启动。
+          if (prev.create_mode !== 'import') {
+            if (shouldUseBIOSForI440FXWindows(next, isEdit)) {
+              next.boot_type = 'bios'
+            } else if (!bootTypeTouchedRef.current) {
+              next.boot_type = 'uefi'
+            }
           }
           // Windows 默认 SATA 磁盘 + e1000e 网卡（兼容性更好）
           next.disk_bus = 'sata'

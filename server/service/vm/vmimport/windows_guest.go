@@ -42,18 +42,21 @@ func importVMWindowsDefine(params *ImportVMParams, destDiskPath, format string, 
 		networkXML = service.BuildOVSInterfaceXML(macAddr, params.NicModel) + "\n"
 	}
 
-	// 生成 NVRAM（格式按当前 libvirt 版本策略决定）
-	nvramClone := fmt.Sprintf("/var/lib/libvirt/qemu/nvram/%s_VARS.fd", params.Name)
-	if err := vm_xml.CreateNVRAMFromTemplate("/usr/share/OVMF/OVMF_VARS_4M.ms.fd", nvramClone); err != nil {
-		_ = os.Remove(destDiskPath)
-		return err
-	}
+	// 生成 NVRAM（格式按当前 libvirt 版本策略决定），仅 UEFI 模式需要
+	nvramClone := ""
 	preserveNVRAM := false
-	defer func() {
-		if !preserveNVRAM {
-			_ = os.Remove(nvramClone)
+	if needUEFI {
+		nvramClone = fmt.Sprintf("/var/lib/libvirt/qemu/nvram/%s_VARS.fd", params.Name)
+		if err := vm_xml.CreateNVRAMFromTemplate("/usr/share/OVMF/OVMF_VARS_4M.ms.fd", nvramClone); err != nil {
+			_ = os.Remove(destDiskPath)
+			return err
 		}
-	}()
+		defer func() {
+			if !preserveNVRAM {
+				_ = os.Remove(nvramClone)
+			}
+		}()
+	}
 
 	ramKiB := ramMB * 1024
 
@@ -70,26 +73,38 @@ func importVMWindowsDefine(params *ImportVMParams, destDiskPath, format string, 
 		clockOpenTag = fmt.Sprintf("<clock offset='%s' start='%s'>", rtcOffset, epoch)
 	}
 
-	// 使用显式 loader/nvram，不使用 firmware='efi' 自动选择。
-	// <nvram> 的 format/templateFormat 属性由 BuildNVRAMElementXML 按 libvirt 版本能力决定，
-	// 确保磁盘 NVRAM 真实格式与 libvirt 加载的 pflash 格式一致（否则 OVMF 读错变量存储会黑屏）。
-	loaderPath := vm_xml.ResolveOVMFLoaderPath(true)
-	varsTemplate := vm_xml.ResolveOVMFVarsTemplatePath(true)
-	nvramElement := strings.TrimLeft(vm_xml.BuildNVRAMElementXML(varsTemplate, nvramClone), " ")
+	// BIOS 模式：纯 hvm + boot hd，无 loader/smm/tpm/NVRAM
+	osXML := fmt.Sprintf(`  <os>
+    <type arch='%s' machine='%s'>hvm</type>
+    <boot dev='hd'/>
+  </os>`, archName, machineType)
+	smmXML := ""
+	tpmXML := ""
+	if needUEFI {
+		// 使用显式 loader/nvram，不使用 firmware='efi' 自动选择。
+		// <nvram> 的 format/templateFormat 属性由 BuildNVRAMElementXML 按 libvirt 版本能力决定，
+		// 确保磁盘 NVRAM 真实格式与 libvirt 加载的 pflash 格式一致（否则 OVMF 读错变量存储会黑屏）。
+		loaderPath := vm_xml.ResolveOVMFLoaderPath(true)
+		varsTemplate := vm_xml.ResolveOVMFVarsTemplatePath(true)
+		nvramElement := strings.TrimLeft(vm_xml.BuildNVRAMElementXML(varsTemplate, nvramClone), " ")
+		osXML = fmt.Sprintf(`  <os>
+    <type arch='%s' machine='%s'>hvm</type>
+    <loader readonly='yes' secure='yes' type='pflash'>%s</loader>
+    %s
+    <boot dev='hd'/>
+  </os>`, archName, machineType, loaderPath, nvramElement)
+		smmXML = "<smm state='on'/>"
+		tpmXML = "    <tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm>\n"
+	}
 
 	vmXML := fmt.Sprintf(`<domain type='kvm'>
   <name>%s</name>
   <memory unit='KiB'>%d</memory>
 %s
-  <os>
-    <type arch='%s' machine='%s'>hvm</type>
-    <loader readonly='yes' secure='yes' type='pflash'>%s</loader>
-    %s
-    <boot dev='hd'/>
-  </os>
+%s
   <features>
     <acpi/><apic/>
-    %s<vmport state='off'/><smm state='on'/>
+    %s<vmport state='off'/>%s
   </features>
   <cpu mode='host-passthrough' check='none' migratable='on'/>
   %s
@@ -107,7 +122,7 @@ func importVMWindowsDefine(params *ImportVMParams, destDiskPath, format string, 
     <controller type='virtio-serial' index='0'/>
 %s
     <input type='tablet' bus='usb'/>
-    <tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm>
+%s
     <graphics type='vnc' port='-1' autoport='yes' listen='127.0.0.1'>
       <listen type='address' address='127.0.0.1'/>
     </graphics>
@@ -119,17 +134,16 @@ func importVMWindowsDefine(params *ImportVMParams, destDiskPath, format string, 
 		params.Name,
 		ramKiB,
 		service.BuildVCPUTag(params.VCPU, params.MaxVCPU),
-		archName,
-		machineType,
-		loaderPath,
-		nvramElement,
+		osXML,
 		hyperVBlock,
+		smmXML,
 		clockOpenTag,
 		hyperVFeaturesBlock,
 		emulatorPath,
 		format,
 		destDiskPath,
 		networkXML,
+		tpmXML,
 		watchdogModel,
 	)
 
@@ -236,7 +250,7 @@ func importVMWindowsDefine(params *ImportVMParams, destDiskPath, format string, 
 }
 
 // importDiskByPathWindowsDefine handles Windows VM XML construction and define for ImportDiskByPath
-func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath, format string, ramMB int, mainDiskSrc string) error {
+func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath, format string, ramMB int, mainDiskSrc string, needUEFI bool) error {
 	// 获取宿主机架构 Profile，参数化 arch/machine/emulator/watchdog
 	hostArch := arch.DetectHostArch()
 	profile := arch.GetProfile(hostArch)
@@ -264,17 +278,21 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
 		networkXML = service.BuildOVSInterfaceXML(macAddr, params.NicModel) + "\n"
 	}
 
-	nvramClone := fmt.Sprintf("/var/lib/libvirt/qemu/nvram/%s_VARS.fd", params.Name)
-	if err := vm_xml.CreateNVRAMFromTemplate("/usr/share/OVMF/OVMF_VARS_4M.ms.fd", nvramClone); err != nil {
-		_ = os.Remove(destDiskPath)
-		return err
-	}
+	// 生成 NVRAM（格式按当前 libvirt 版本策略决定），仅 UEFI 模式需要
+	nvramClone := ""
 	preserveNVRAM := false
-	defer func() {
-		if !preserveNVRAM {
-			_ = os.Remove(nvramClone)
+	if needUEFI {
+		nvramClone = fmt.Sprintf("/var/lib/libvirt/qemu/nvram/%s_VARS.fd", params.Name)
+		if err := vm_xml.CreateNVRAMFromTemplate("/usr/share/OVMF/OVMF_VARS_4M.ms.fd", nvramClone); err != nil {
+			_ = os.Remove(destDiskPath)
+			return err
 		}
-	}()
+		defer func() {
+			if !preserveNVRAM {
+				_ = os.Remove(nvramClone)
+			}
+		}()
+	}
 
 	ramKiB := ramMB * 1024
 
@@ -291,10 +309,27 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
 		clockOpenTag = fmt.Sprintf("<clock offset='%s' start='%s'>", rtcOffset, epoch)
 	}
 
-	// 使用显式 loader/nvram，不使用 firmware='efi' 自动选择
-	loaderPath2 := vm_xml.ResolveOVMFLoaderPath(true)
-	varsTemplate2 := vm_xml.ResolveOVMFVarsTemplatePath(true)
-	nvramElement2 := strings.TrimLeft(vm_xml.BuildNVRAMElementXML(varsTemplate2, nvramClone), " ")
+	// BIOS 模式：纯 hvm + boot hd，无 loader/smm/tpm/NVRAM
+	osXML := fmt.Sprintf(`  <os>
+    <type arch='%s' machine='%s'>hvm</type>
+    <boot dev='hd'/>
+  </os>`, archName, machineType)
+	smmXML := ""
+	tpmXML := ""
+	if needUEFI {
+		// 使用显式 loader/nvram，不使用 firmware='efi' 自动选择
+		loaderPath := vm_xml.ResolveOVMFLoaderPath(true)
+		varsTemplate := vm_xml.ResolveOVMFVarsTemplatePath(true)
+		nvramElement := strings.TrimLeft(vm_xml.BuildNVRAMElementXML(varsTemplate, nvramClone), " ")
+		osXML = fmt.Sprintf(`  <os>
+    <type arch='%s' machine='%s'>hvm</type>
+    <loader readonly='yes' secure='yes' type='pflash'>%s</loader>
+    %s
+    <boot dev='hd'/>
+  </os>`, archName, machineType, loaderPath, nvramElement)
+		smmXML = "<smm state='on'/>"
+		tpmXML = "    <tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm>\n"
+	}
 	systemDiskBus := normalizeImportDiskBus(params.SystemDiskBus)
 	systemDiskDevice := importDiskTargetDevice(systemDiskBus)
 
@@ -302,15 +337,10 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
   <name>%s</name>
   <memory unit='KiB'>%d</memory>
 %s
-  <os>
-    <type arch='%s' machine='%s'>hvm</type>
-    <loader readonly='yes' secure='yes' type='pflash'>%s</loader>
-    %s
-    <boot dev='hd'/>
-  </os>
+%s
   <features>
     <acpi/><apic/>
-    %s<vmport state='off'/><smm state='on'/>
+    %s<vmport state='off'/>%s
   </features>
   <cpu mode='host-passthrough' check='none' migratable='on'/>
   %s
@@ -328,7 +358,7 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
     <controller type='virtio-serial' index='0'/>
 %s
     <input type='tablet' bus='usb'/>
-    <tpm model='tpm-crb'><backend type='emulator' version='2.0'/></tpm>
+%s
     <graphics type='vnc' port='-1' autoport='yes' listen='127.0.0.1'>
       <listen type='address' address='127.0.0.1'/>
     </graphics>
@@ -340,11 +370,9 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
 		params.Name,
 		ramKiB,
 		service.BuildVCPUTag(params.VCPU, params.MaxVCPU),
-		archName,
-		machineType,
-		loaderPath2,
-		nvramElement2,
+		osXML,
 		hyperVBlock,
+		smmXML,
 		clockOpenTag,
 		hyperVFeaturesBlock,
 		emulatorPath,
@@ -353,6 +381,7 @@ func importDiskByPathWindowsDefine(params *ImportDiskByPathParams, destDiskPath,
 		systemDiskDevice,
 		systemDiskBus,
 		networkXML,
+		tpmXML,
 		watchdogModel,
 	)
 

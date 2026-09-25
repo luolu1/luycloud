@@ -213,7 +213,7 @@ func ImportDiskByPath(ctx context.Context, params *ImportDiskByPathParams, progr
 	format := "qcow2" // 目标格式始终是 qcow2
 
 	if isWindows {
-		if err := importDiskByPathWindowsDefine(params, destDiskPath, format, ramMB, mainDiskSrc); err != nil {
+		if err := importDiskByPathWindowsDefine(params, destDiskPath, format, ramMB, mainDiskSrc, needUEFI); err != nil {
 			return nil, err
 		}
 	} else {
