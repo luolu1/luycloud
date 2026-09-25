@@ -30,5 +30,5 @@ type ArchProfile interface {
 	SupportsSecureBoot() bool                    // 是否支持安全引导（x86: true, ARM: false）
 	SupportsPAE() bool                           // 是否支持 PAE（x86: true, ARM: false）
 	SupportsAPIC() bool                          // 是否支持 APIC（x86: true, ARM: false）
-	DefaultWatchdogModel() string                // 默认看门狗模型（x86: itco, ARM: diag288）
+	DefaultWatchdogModel() string                // 默认看门狗模型（x86: i6300esb, ARM: diag288）
 }

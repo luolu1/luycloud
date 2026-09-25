@@ -58,8 +58,8 @@ export const ALL_BOOT_DEVICES = [
 /** Watchdog 选项 */
 export const WATCHDOG_OPTIONS = [
   { value: 'none', label: '不启用' },
-  { value: 'i6300esb', label: 'i6300esb' },
-  { value: 'itco', label: 'iTCO（推荐）' },
+  { value: 'i6300esb', label: 'i6300esb（推荐）' },
+  { value: 'itco', label: 'iTCO（需 QEMU ≥ 7.2）' },
 ] as const
 
 /** CPU 拓扑模式选项 */

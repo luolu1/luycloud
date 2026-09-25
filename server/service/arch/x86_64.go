@@ -19,7 +19,7 @@ func (p *x8664Profile) SupportsBIOS() bool              { return true }
 func (p *x8664Profile) SupportsSecureBoot() bool        { return true }
 func (p *x8664Profile) SupportsPAE() bool               { return true }
 func (p *x8664Profile) SupportsAPIC() bool              { return true }
-func (p *x8664Profile) DefaultWatchdogModel() string    { return "itco" }
+func (p *x8664Profile) DefaultWatchdogModel() string    { return "i6300esb" }
 
 func (p *x8664Profile) DefaultCPUModel(virtType string) string {
 	if virtType == "qemu" {
