@@ -122,6 +122,13 @@ func filterNonPhysical(devices []lsblkDevice) []lsblkDevice {
 		if strings.HasPrefix(nameLower, "ram") || strings.HasPrefix(nameLower, "zram") {
 			continue
 		}
+		// 跳过 NBD 设备（如 /dev/nbd*）。qemu-nbd / libguestfs（离线扩容、
+		// 磁盘检查等）会加载 nbd 内核模块，模块加载即按 nbds_max 一次性生成
+		// 全部 /dev/nbd* 节点；即便操作已断开，这些 0B 空节点仍会残留，
+		// lsblk 将其报告为 TYPE=disk，会被误列为"待初始化"的存储池设备。
+		if strings.HasPrefix(nameLower, "nbd") {
+			continue
+		}
 		// 递归过滤子设备
 		dev.Children = filterNonPhysical(dev.Children)
 		result = append(result, dev)
