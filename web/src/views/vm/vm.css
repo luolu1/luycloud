@@ -365,6 +365,27 @@ body[theme-mode='dark'] .qvm-export-disk-list strong {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+/* 深色下名称为大面积标题文字，避免近白刺眼（AGENTS #27） */
+body[theme-mode='dark'] .qvm-vm-name-text {
+  color: #b8c1cf;
+}
+/* 名称 Tooltip：名称主体 + 备注副行 */
+.qvm-vm-name-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 320px;
+  word-break: break-all;
+}
+.qvm-vm-name-tip-name {
+  font-weight: 600;
+}
+.qvm-vm-name-tip-remark {
+  font-size: 12px;
+  opacity: 0.8;
 }
 .qvm-vm-badge.lock {
   color: var(--qvm-warn);
@@ -418,56 +439,6 @@ body[theme-mode='dark'] .qvm-export-disk-list strong {
 .qvm-tag-add-button.semi-button {
   flex: none;
   padding: 0 3px;
-}
-.qvm-tpl-name {
-  color: var(--qvm-text-2);
-  font-size: 12px;
-}
-/* 模板列内两行：主模板名 + 副系统版本 */
-.qvm-tpl-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-.qvm-tpl-cell .qvm-tpl-name {
-  color: var(--qvm-text-1);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.qvm-tpl-os {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--qvm-text-2);
-  font-size: 11px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* 系统类型色点：linux 青 / windows 冰蓝 / fnos 电紫 */
-.qvm-os-dot {
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--qvm-text-2);
-}
-.qvm-os-dot.linux {
-  background: var(--qvm-acc);
-}
-.qvm-os-dot.win {
-  background: var(--qvm-acc3);
-}
-.qvm-os-dot.fnos {
-  background: var(--qvm-acc2);
-}
-/* 卡片视图系统行：色点 + 文本 */
-.qvm-vcard-os {
-  display: flex;
-  align-items: center;
-  gap: 5px;
 }
 .qvm-runtime {
   color: var(--qvm-text-2);

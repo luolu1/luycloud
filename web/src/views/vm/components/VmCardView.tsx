@@ -7,7 +7,7 @@ import { IllustrationNoContent, IllustrationNoContentDark } from '@douyinfe/semi
 import { IconDesktop, IconLock, IconWrench } from '@douyinfe/semi-icons'
 import type { VmListItem, VmPowerAction } from '@/api/vm'
 import { formatRuntime } from '@/utils/format'
-import { vmConfigText, vmOsText, vmOsDotKind, shouldOpenVmDetail } from '../utils'
+import { vmConfigText, shouldOpenVmDetail } from '../utils'
 import VmStatusIcon from './VmStatusIcon'
 import VmResourceBars from './VmResourceBars'
 import VmIpCell from './VmIpCell'
@@ -78,9 +78,17 @@ export default function VmCardView({
               <IconDesktop size="small" />
             </div>
             <div className="qvm-vcard-title">
-              <span className="qvm-vm-name-text" title={vm.name}>
-                {vm.name}
-              </span>
+              <Tooltip
+                position="top"
+                content={
+                  <div className="qvm-vm-name-tip">
+                    <span className="qvm-vm-name-tip-name">{vm.name}</span>
+                    {vm.remark && <span className="qvm-vm-name-tip-remark">{vm.remark}</span>}
+                  </div>
+                }
+              >
+                <span className="qvm-vm-name-text">{vm.name}</span>
+              </Tooltip>
               <span className="qvm-vcard-badges">
                 {vm.locked && (
                   <Tooltip content="已锁定" position="top">
@@ -123,24 +131,6 @@ export default function VmCardView({
             <div className="qvm-vcard-row">
               <span className="qvm-vcard-label">IP 地址</span>
               <VmIpCell vm={vm} />
-            </div>
-            <div className="qvm-vcard-row">
-              <span className="qvm-vcard-label">模板</span>
-              <span className="qvm-vcard-value" title={vm.template || ''}>
-                {vm.template || '-'}
-              </span>
-            </div>
-            <div className="qvm-vcard-row">
-              <span className="qvm-vcard-label">系统</span>
-              <span
-                className="qvm-vcard-value qvm-vcard-os"
-                title={vm.os_version || vm.os_type || ''}
-              >
-                {vmOsDotKind(vm.os_type) && (
-                  <i className={`qvm-os-dot ${vmOsDotKind(vm.os_type)}`} />
-                )}
-                {vmOsText(vm)}
-              </span>
             </div>
             <div className="qvm-vcard-row">
               <span className="qvm-vcard-label">运行时长</span>

@@ -16,7 +16,7 @@ import VmResourceBars from './VmResourceBars'
 import VmIpCell from './VmIpCell'
 import VmActionsCell, { type VmMenuCommand } from './VmActionsCell'
 import VmTagsEditor from './VmTagsEditor'
-import { shouldOpenVmDetail, vmOsText, vmOsDotKind } from '../utils'
+import { shouldOpenVmDetail } from '../utils'
 
 export type VmSortField = 'name' | 'resource' | 'ip'
 export type VmSortOrder = 'ascend' | 'descend'
@@ -77,14 +77,23 @@ export default function VmTableView({
         dataIndex: 'name',
         sorter: true,
         sortOrder: sortState('name'),
+        width: 200,
         render: (_text, vm) => (
           <div className="qvm-vm-cell">
             <div className={`qvm-vm-ic ${vm.status === 'running' ? '' : 'off'}`}>
               <IconDesktop size="small" />
             </div>
-            <span className="qvm-vm-name-text" title={vm.remark || undefined}>
-              {vm.name}
-            </span>
+            <Tooltip
+              position="top"
+              content={
+                <div className="qvm-vm-name-tip">
+                  <span className="qvm-vm-name-tip-name">{vm.name}</span>
+                  {vm.remark && <span className="qvm-vm-name-tip-remark">{vm.remark}</span>}
+                </div>
+              }
+            >
+              <span className="qvm-vm-name-text">{vm.name}</span>
+            </Tooltip>
             {vm.locked && (
               <Tooltip content="已锁定" position="top">
                 <IconLock size="small" className="qvm-vm-badge lock" />
@@ -107,33 +116,9 @@ export default function VmTableView({
         render: (_text, vm) => <VmStatusIcon status={vm.status} />,
       },
       {
-        title: '模板',
-        dataIndex: 'template',
-        className: 'col-hide-md',
-        onHeaderCell: () => ({ className: 'col-hide-md' }),
-        ellipsis: true,
-        render: (text, vm) => {
-          const os = vmOsText(vm)
-          const dot = vmOsDotKind(vm.os_type)
-          return (
-            <div className="qvm-tpl-cell">
-              <span className="qvm-tpl-name" title={text || undefined}>
-                {text || '-'}
-              </span>
-              {os !== '-' && (
-                <span className="qvm-tpl-os" title={vm.os_version || vm.os_type || undefined}>
-                  {dot && <i className={`qvm-os-dot ${dot}`} />}
-                  {os}
-                </span>
-              )}
-            </div>
-          )
-        },
-      },
-      {
         title: '标签',
         dataIndex: 'tags',
-        width: 250,
+        width: 220,
         render: (_text, vm) => <VmTagsEditor vm={vm} onSave={onTagsSave} />,
       },
       {
