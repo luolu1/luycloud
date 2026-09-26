@@ -82,7 +82,7 @@
 /* 已启用：霓虹青 */
 .fw-banner.enabled {
   border-color: rgba(13, 148, 136, 0.32);
-  background: linear-gradient(120deg, rgba(45, 212, 191, 0.12), rgba(56, 189, 248, 0.06));
+  background: linear-gradient(120deg, rgba(59, 130, 246, 0.12), rgba(14, 165, 233, 0.06));
 }
 .fw-banner.enabled .fw-banner-icon {
   color: var(--qvm-acc-ink);
@@ -97,8 +97,8 @@
 }
 /* 信息：冰蓝 */
 .fw-banner.info {
-  border-color: rgba(56, 189, 248, 0.3);
-  background: linear-gradient(120deg, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.04));
+  border-color: rgba(14, 165, 233, 0.3);
+  background: linear-gradient(120deg, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0.04));
 }
 .fw-banner.info .fw-banner-icon {
   color: var(--qvm-acc3-ink);

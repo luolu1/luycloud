@@ -85,7 +85,7 @@
   right: 18px;
   bottom: 0;
   height: 1px;
-  background: linear-gradient(90deg, rgba(45, 212, 191, 0.5), rgba(139, 92, 246, 0.25), transparent);
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.5), rgba(99, 102, 241, 0.25), transparent);
 }
 .qvm-logo-img {
   width: 34px;
@@ -174,12 +174,12 @@
   width: 3px;
   border-radius: 0 3px 3px 0;
   background: var(--qvm-grad);
-  box-shadow: 0 0 12px rgba(45, 212, 191, 0.8);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.8);
 }
 .qvm-nav-item.on .semi-icon {
   color: var(--qvm-acc-ink);
   opacity: 1;
-  filter: drop-shadow(0 0 6px rgba(45, 212, 191, 0.6));
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.6));
 }
 .qvm-nav-txt {
   overflow: hidden;
@@ -196,9 +196,9 @@
   border: 1px solid var(--qvm-acc-stroke);
 }
 .qvm-nav-bdg.purple {
-  background: rgba(139, 92, 246, 0.12);
+  background: rgba(99, 102, 241, 0.12);
   color: var(--qvm-acc2-ink);
-  border-color: rgba(139, 92, 246, 0.24);
+  border-color: rgba(99, 102, 241, 0.24);
 }
 
 /* 虚拟机快速切换子列表 */
@@ -477,8 +477,8 @@ body[theme-mode='dark'] .qvm-sponsor-benefits-title {
   font-size: 10.5px;
   padding: 3px 10px;
   border-radius: 8px;
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.28);
   color: var(--qvm-acc3-ink);
   font-weight: 600;
   margin-left: 10px;
@@ -497,7 +497,7 @@ body[theme-mode='dark'] .qvm-sponsor-benefits-title {
   height: 7px;
   border-radius: 50%;
   background: var(--qvm-acc);
-  box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.5);
+  box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
   animation: qvm-pulse 2s infinite;
   flex: none;
 }
@@ -527,7 +527,7 @@ body[theme-mode='dark'] .qvm-sponsor-benefits-title {
   height: 7px;
   border-radius: 50%;
   background: var(--qvm-acc2);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.9);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.9);
 }
 
 /* 渐变主按钮（全站通用：工作台顶部、虚拟机列表等） */
@@ -537,7 +537,7 @@ body[theme-mode='dark'] .qvm-sponsor-benefits-title {
   border: none;
   font-weight: 700;
   font-family: var(--qvm-num-font);
-  box-shadow: 0 8px 26px rgba(45, 212, 191, 0.32);
+  box-shadow: 0 8px 26px rgba(59, 130, 246, 0.32);
   transition:
     transform 0.18s,
     box-shadow 0.18s,
@@ -546,7 +546,7 @@ body[theme-mode='dark'] .qvm-sponsor-benefits-title {
 .qvm-btn-grad.semi-button:hover:not(:disabled) {
   background: var(--qvm-grad);
   color: var(--qvm-on-grad-text);
-  box-shadow: 0 10px 32px rgba(45, 212, 191, 0.45);
+  box-shadow: 0 10px 32px rgba(59, 130, 246, 0.45);
   transform: translateY(-1px);
 }
 .qvm-btn-grad.semi-button:active:not(:disabled) {
@@ -687,7 +687,7 @@ body[theme-mode='dark'] .qvm-topbar-title {
   height: 100%;
   border-radius: 3px;
   background: var(--qvm-grad);
-  box-shadow: 0 0 8px rgba(45, 212, 191, 0.5);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
   transition: width 0.4s ease;
 }
 .qvm-tb-prog-num {
@@ -801,8 +801,8 @@ body[theme-mode='dark'] .qvm-topbar-title {
   color: var(--qvm-acc3-ink);
 }
 .qvm-st-tag.running i {
-  background: #38bdf8;
-  box-shadow: 0 0 6px rgba(56, 189, 248, 0.9);
+  background: var(--qvm-acc3);
+  box-shadow: 0 0 6px rgba(14, 165, 233, 0.9);
   animation: qvm-blink 1.2s infinite;
 }
 .qvm-st-tag.pending {
@@ -816,7 +816,7 @@ body[theme-mode='dark'] .qvm-topbar-title {
   color: var(--qvm-acc-ink);
 }
 .qvm-st-tag.success i {
-  background: #2dd4bf;
+  background: var(--qvm-acc);
 }
 .qvm-st-tag.failed {
   color: var(--qvm-danger);

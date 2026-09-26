@@ -221,11 +221,11 @@
   border-radius: 2px;
   margin-right: 10px;
 }
-.tpl-level-bar.l0 { background: #38bdf8; }
+.tpl-level-bar.l0 { background: #0ea5e9; }
 .tpl-level-bar.l1 { background: #34d399; }
 .tpl-level-bar.l2 { background: #fbbf24; }
 .tpl-level-bar.l3 { background: #f472b6; }
-.tpl-level-bar.l4 { background: #2dd4bf; }
+.tpl-level-bar.l4 { background: #6366f1; }
 
 /* 节点内容 */
 .tpl-node-content {
@@ -324,8 +324,8 @@
 }
 .tpl-act-ic.info:hover {
   color: var(--qvm-acc3-ink);
-  background: rgba(56, 189, 248, 0.1);
-  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(14, 165, 233, 0.1);
+  border-color: rgba(14, 165, 233, 0.3);
 }
 .tpl-act-ic.warn:hover {
   color: var(--qvm-warn);

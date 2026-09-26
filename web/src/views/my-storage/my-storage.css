@@ -197,8 +197,8 @@
 }
 .mst-act-ic.info:hover {
   color: var(--qvm-acc3-ink);
-  background: rgba(56, 189, 248, 0.1);
-  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(14, 165, 233, 0.1);
+  border-color: rgba(14, 165, 233, 0.3);
 }
 .mst-act-ic.danger:hover {
   color: var(--qvm-danger);

@@ -1,95 +1,137 @@
 /**
- * 深空极光设计令牌与通用工具类
+ * 现代科技蓝 设计令牌与通用工具类
  * - 浅色为默认主题（浅色优先），深色通过 body[theme-mode="dark"] 适配
  * - 命名统一使用 --qvm- 前缀，避免与 Semi 变量冲突
+ * - 主色调收敛到「电蓝/科技蓝」，以 #3b82f6 / #2563eb 为核心，
+ *   #0ea5e9 冰蓝做渐变与点缀，#6366f1 靛蓝做克制的次级强调
+ * - 同时覆盖 Semi 的 --semi-color-primary / -link / -focus-border 系列，
+ *   让按钮、链接、选中态等 Semi 原生组件也统一跟随科技蓝
  */
 
 :root {
   /* ===== 品牌色（两主题通用，主要用于渐变填充与发光） ===== */
-  --qvm-acc: #2dd4bf; /* 霓虹青 */
-  --qvm-acc2: #8b5cf6; /* 电紫 */
-  --qvm-acc3: #38bdf8; /* 冰蓝 */
+  --qvm-acc: #3b82f6; /* 电蓝（主） */
+  --qvm-acc2: #6366f1; /* 靛蓝（次级强调，冷色克制） */
+  --qvm-acc3: #0ea5e9; /* 冰蓝（点缀/渐变收尾） */
   --qvm-warn: #f59e0b;
+  --qvm-warning: #f59e0b;
   --qvm-danger: #fb7185;
-  --qvm-grad: linear-gradient(120deg, #2dd4bf, #38bdf8);
-  --qvm-grad2: linear-gradient(120deg, #8b5cf6, #38bdf8);
+  --qvm-grad: linear-gradient(120deg, #2563eb, #0ea5e9); /* 皇家蓝 → 冰蓝 */
+  --qvm-grad2: linear-gradient(120deg, #6366f1, #38bdf8); /* 靛蓝 → 亮蓝 */
   --qvm-num-font:
     'Space Grotesk', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
 
-  /* ===== 浅色主题（默认） ===== */
-  --qvm-bg: #edf1f7;
-  --qvm-text-0: #1b2434;
-  --qvm-text-1: #55617a;
-  --qvm-text-2: #8b97ad;
-  --qvm-stroke: rgba(30, 41, 59, 0.09);
-  --qvm-stroke-strong: rgba(30, 41, 59, 0.16);
-  --qvm-card-bg: rgba(255, 255, 255, 0.66);
-  --qvm-panel-bg: rgba(255, 255, 255, 0.72);
+  /* ===== 浅色主题（默认，优先保证可读性与对比度） ===== */
+  --qvm-bg: #eef2f8;
+  --qvm-text-0: #101b2e;
+  --qvm-text-1: #49566f;
+  --qvm-text-2: #8893a9;
+  --qvm-text-3: #a7b1c4;
+  --qvm-stroke: rgba(30, 46, 84, 0.1);
+  --qvm-stroke-strong: rgba(30, 46, 84, 0.18);
+  --qvm-card-bg: rgba(255, 255, 255, 0.68);
+  --qvm-panel-bg: rgba(255, 255, 255, 0.74);
   --qvm-sidebar-bg: linear-gradient(
     175deg,
-    rgba(255, 255, 255, 0.9),
-    rgba(244, 247, 252, 0.92)
+    rgba(255, 255, 255, 0.92),
+    rgba(240, 245, 252, 0.94)
   );
-  --qvm-taskbar-bg: rgba(255, 255, 255, 0.88);
-  --qvm-hover-bg: rgba(15, 23, 42, 0.045);
-  --qvm-track-bg: rgba(15, 23, 42, 0.07);
+  --qvm-taskbar-bg: rgba(255, 255, 255, 0.9);
+  --qvm-hover-bg: rgba(37, 99, 235, 0.06);
+  --qvm-track-bg: rgba(15, 30, 66, 0.07);
   /* 强调色在浅色下需要更深的可读变体（文字/图标用） */
-  --qvm-acc-ink: #0d9488;
-  --qvm-acc2-ink: #7c3aed;
-  --qvm-acc3-ink: #0284c7;
-  --qvm-acc-bg: rgba(13, 148, 136, 0.1);
-  --qvm-acc-stroke: rgba(13, 148, 136, 0.28);
+  --qvm-acc-ink: #1d4ed8;
+  --qvm-acc2-ink: #4f46e5;
+  --qvm-acc3-ink: #0369a1;
+  --qvm-warn-ink: #b45309;
+  --qvm-warning-text: #b45309;
+  --qvm-danger-ink: #dc2626;
+  --qvm-acc-bg: rgba(37, 99, 235, 0.1);
+  --qvm-acc-stroke: rgba(37, 99, 235, 0.28);
+  --qvm-danger-bg: rgba(220, 38, 38, 0.08);
+  --qvm-danger-stroke: rgba(220, 38, 38, 0.32);
   --qvm-active-bg: linear-gradient(
     100deg,
-    rgba(45, 212, 191, 0.2),
-    rgba(56, 189, 248, 0.1)
+    rgba(59, 130, 246, 0.2),
+    rgba(14, 165, 233, 0.1)
   );
-  --qvm-glow: 0 0 24px rgba(45, 212, 191, 0.3);
-  --qvm-panel-shadow: 0 18px 44px rgba(51, 65, 85, 0.14);
-  --qvm-card-shadow: 0 8px 24px rgba(51, 65, 85, 0.08);
-  --qvm-aurora-1: rgba(45, 212, 191, 0.16);
-  --qvm-aurora-2: rgba(139, 92, 246, 0.14);
-  --qvm-grid-line: rgba(30, 41, 59, 0.05);
-  --qvm-on-grad-text: #052822; /* 渐变按钮上的文字色 */
+  --qvm-glow: 0 0 24px rgba(59, 130, 246, 0.28);
+  --qvm-panel-shadow: 0 18px 44px rgba(30, 46, 84, 0.14);
+  --qvm-card-shadow: 0 8px 24px rgba(30, 46, 84, 0.08);
+  --qvm-aurora-1: rgba(59, 130, 246, 0.16);
+  --qvm-aurora-2: rgba(14, 165, 233, 0.14);
+  --qvm-grid-line: rgba(30, 46, 84, 0.055);
+  --qvm-on-grad-text: #f2f8ff; /* 渐变按钮上的文字色（蓝底用近白） */
+
+  /* ===== Semi 主色跟随科技蓝（浅色） ===== */
+  --semi-color-primary: #2563eb;
+  --semi-color-primary-hover: #1d4ed8;
+  --semi-color-primary-active: #1e40af;
+  --semi-color-primary-light-default: rgba(37, 99, 235, 0.09);
+  --semi-color-primary-light-hover: rgba(37, 99, 235, 0.16);
+  --semi-color-primary-light-active: rgba(37, 99, 235, 0.24);
+  --semi-color-link: #2563eb;
+  --semi-color-link-hover: #1d4ed8;
+  --semi-color-link-active: #1e40af;
+  --semi-color-focus-border: #2563eb;
 }
 
-/* ===== 深色主题适配 ===== */
+/* ===== 深色主题适配（科技纵深，克制发光，柔和灰文字） ===== */
 body[theme-mode='dark'] {
-  --qvm-bg: #070b14;
-  --qvm-text-0: #e7ebf3;
-  --qvm-text-1: #8b95ab;
-  --qvm-text-2: #59627a;
-  --qvm-stroke: rgba(148, 163, 184, 0.1);
-  --qvm-stroke-strong: rgba(148, 163, 184, 0.2);
-  --qvm-card-bg: rgba(255, 255, 255, 0.028);
-  --qvm-panel-bg: rgba(12, 19, 34, 0.72);
+  --qvm-bg: #060b16;
+  /* 依据 AGENTS.md 第 27 条：标题/正文避免近白，令牌本身设为柔和灰 */
+  --qvm-text-0: #c9d2e0; /* 标题级：柔和亮灰，非纯白 */
+  --qvm-text-1: #aab4c6; /* 正文级：接近模板参考 #b8c1cf 的柔和灰 */
+  --qvm-text-2: #6f7a90;
+  --qvm-text-3: #59627a;
+  --qvm-stroke: rgba(148, 170, 214, 0.1);
+  --qvm-stroke-strong: rgba(148, 170, 214, 0.2);
+  --qvm-card-bg: rgba(255, 255, 255, 0.03);
+  --qvm-panel-bg: rgba(14, 22, 40, 0.72);
   --qvm-sidebar-bg: linear-gradient(
     175deg,
-    rgba(19, 28, 50, 0.92),
-    rgba(9, 14, 26, 0.94)
+    rgba(18, 28, 52, 0.92),
+    rgba(8, 13, 26, 0.95)
   );
-  --qvm-taskbar-bg: rgba(11, 18, 33, 0.94);
-  --qvm-hover-bg: rgba(255, 255, 255, 0.04);
+  --qvm-taskbar-bg: rgba(10, 16, 30, 0.94);
+  --qvm-hover-bg: rgba(96, 165, 250, 0.06);
   --qvm-track-bg: rgba(255, 255, 255, 0.07);
-  --qvm-acc-ink: #2dd4bf;
-  --qvm-acc2-ink: #a78bfa;
+  --qvm-acc-ink: #60a5fa;
+  --qvm-acc2-ink: #818cf8;
   --qvm-acc3-ink: #38bdf8;
-  --qvm-acc-bg: rgba(45, 212, 191, 0.1);
-  --qvm-acc-stroke: rgba(45, 212, 191, 0.3);
+  --qvm-warn-ink: #fbbf24;
+  --qvm-warning-text: #fbbf24;
+  --qvm-danger-ink: #f87171;
+  --qvm-acc-bg: rgba(59, 130, 246, 0.12);
+  --qvm-acc-stroke: rgba(59, 130, 246, 0.32);
+  --qvm-danger-bg: rgba(248, 113, 113, 0.1);
+  --qvm-danger-stroke: rgba(248, 113, 113, 0.32);
   --qvm-active-bg: linear-gradient(
     100deg,
-    rgba(45, 212, 191, 0.16),
-    rgba(56, 189, 248, 0.07)
+    rgba(59, 130, 246, 0.18),
+    rgba(14, 165, 233, 0.08)
   );
-  --qvm-glow: 0 0 24px rgba(45, 212, 191, 0.22);
-  --qvm-panel-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
-  --qvm-card-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
-  --qvm-aurora-1: rgba(45, 212, 191, 0.1);
-  --qvm-aurora-2: rgba(139, 92, 246, 0.1);
-  --qvm-grid-line: rgba(148, 163, 184, 0.045);
+  --qvm-glow: 0 0 24px rgba(59, 130, 246, 0.24);
+  --qvm-panel-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  --qvm-card-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+  --qvm-aurora-1: rgba(59, 130, 246, 0.12);
+  --qvm-aurora-2: rgba(99, 102, 241, 0.1);
+  --qvm-grid-line: rgba(148, 170, 214, 0.05);
+
+  /* ===== Semi 主色跟随科技蓝（深色，主色更亮以保证暗底可见） ===== */
+  --semi-color-primary: #3b82f6;
+  --semi-color-primary-hover: #60a5fa;
+  --semi-color-primary-active: #2563eb;
+  --semi-color-primary-light-default: rgba(59, 130, 246, 0.15);
+  --semi-color-primary-light-hover: rgba(59, 130, 246, 0.22);
+  --semi-color-primary-light-active: rgba(59, 130, 246, 0.3);
+  --semi-color-link: #60a5fa;
+  --semi-color-link-hover: #93c5fd;
+  --semi-color-link-active: #3b82f6;
+  --semi-color-focus-border: #3b82f6;
 }
 
-/* ===== 极光氛围背景（fixed，全局一份） ===== */
+/* ===== 蓝色氛围背景（fixed，全局一份） ===== */
 .qvm-aurora {
   position: fixed;
   inset: 0;
@@ -134,7 +176,7 @@ body[theme-mode='dark'] {
   );
 }
 
-/* ===== 渐变描边（glass 卡片通用） ===== */
+/* ===== 渐变描边（glass 卡片通用，科技蓝层次） ===== */
 .qvm-g-border {
   position: relative;
 }
@@ -147,8 +189,8 @@ body[theme-mode='dark'] {
   pointer-events: none;
   background: linear-gradient(
     160deg,
-    rgba(45, 212, 191, 0.32),
-    rgba(139, 92, 246, 0.14) 42%,
+    rgba(59, 130, 246, 0.34),
+    rgba(14, 165, 233, 0.14) 42%,
     rgba(148, 163, 184, 0.07) 72%
   );
   -webkit-mask:
@@ -176,10 +218,10 @@ body[theme-mode='dark'] {
 /* ===== 动画 ===== */
 @keyframes qvm-pulse {
   70% {
-    box-shadow: 0 0 0 8px rgba(45, 212, 191, 0);
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(45, 212, 191, 0);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
   }
 }
 @keyframes qvm-floaty {
@@ -227,8 +269,8 @@ body[theme-mode='dark'] {
   display: inline-block;
 }
 .qvm-dot.run {
-  background: #2dd4bf;
-  box-shadow: 0 0 6px rgba(45, 212, 191, 0.8);
+  background: #34d399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
 }
 .qvm-dot.warn {
   background: #fbbf24;

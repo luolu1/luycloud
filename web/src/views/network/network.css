@@ -75,16 +75,16 @@
   color: #d97706;
 }
 .net-stat-icon.down {
-  background: rgba(56, 189, 248, 0.14);
-  color: #0284c7;
+  background: rgba(14, 165, 233, 0.14);
+  color: var(--qvm-acc3-ink);
 }
 .net-stat-icon.up {
-  background: rgba(167, 139, 250, 0.16);
-  color: #7c3aed;
+  background: rgba(129, 140, 248, 0.16);
+  color: var(--qvm-acc2-ink);
 }
 .net-stat-icon.down-bandwidth {
-  background: rgba(45, 212, 191, 0.14);
-  color: #0d9488;
+  background: rgba(59, 130, 246, 0.14);
+  color: var(--qvm-acc-ink);
 }
 .net-stat-icon.up-bandwidth {
   background: rgba(244, 114, 182, 0.14);

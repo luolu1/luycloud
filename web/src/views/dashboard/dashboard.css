@@ -429,8 +429,8 @@ body[theme-mode='dark'] .qvm-status-banner.error {
   color: var(--qvm-acc-ink);
 }
 .qvm-st-pill.run i {
-  background: #2dd4bf;
-  box-shadow: 0 0 6px rgba(45, 212, 191, 0.9);
+  background: var(--qvm-acc);
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.9);
 }
 .qvm-st-pill.stop {
   background: var(--qvm-hover-bg);
@@ -548,7 +548,7 @@ body[theme-mode='dark'] .qvm-status-banner.error {
   height: 15px;
   border-radius: 2px;
   background: var(--qvm-grad);
-  box-shadow: 0 0 8px rgba(45, 212, 191, 0.6);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
 }
 .qvm-section-actions {
   margin-left: auto;

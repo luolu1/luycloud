@@ -62,8 +62,8 @@
   display: inline-block;
 }
 .qvm-live-dot.on {
-  background: #2dd4bf;
-  box-shadow: 0 0 6px rgba(45, 212, 191, 0.8);
+  background: var(--qvm-acc);
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.8);
   animation: qvm-blink 1.6s infinite;
 }
 
@@ -126,8 +126,8 @@
   color: #d97706;
 }
 .qvm-hero-status-icon.migrating {
-  background: rgba(56, 189, 248, 0.1);
-  border: 2px solid rgba(56, 189, 248, 0.32);
+  background: rgba(14, 165, 233, 0.1);
+  border: 2px solid rgba(14, 165, 233, 0.32);
   color: var(--qvm-acc3-ink);
 }
 .qvm-hero-status-icon.stopped {
@@ -144,15 +144,15 @@
   height: 12px;
   border-radius: 50%;
   background: var(--qvm-acc);
-  box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.7);
+  box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
   animation: qvm-pulse-ring 2s infinite;
 }
 @keyframes qvm-pulse-ring {
   70% {
-    box-shadow: 0 0 0 10px rgba(45, 212, 191, 0);
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(45, 212, 191, 0);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
   }
 }
 
@@ -273,10 +273,10 @@ body[theme-mode='dark'] .qvm-action-item.lock {
   border-radius: 3px;
 }
 .qvm-meter-fill.cyan {
-  background: linear-gradient(90deg, #2dd4bf, #38bdf8);
+  background: var(--qvm-grad);
 }
 .qvm-meter-fill.purple {
-  background: linear-gradient(90deg, #8b5cf6, #c084fc);
+  background: var(--qvm-grad2);
 }
 
 .qvm-hero-res-io {
@@ -461,8 +461,8 @@ body[theme-mode='dark'] .qvm-action-item.lock {
   transform: translateY(0);
 }
 .qvm-vnc-open-btn:hover {
-  background: rgba(45, 212, 191, 0.28);
-  border-color: rgba(45, 212, 191, 0.5);
+  background: rgba(59, 130, 246, 0.28);
+  border-color: rgba(59, 130, 246, 0.5);
 }
 
 /* ============ 功能标签页 ============ */
@@ -831,7 +831,7 @@ body[theme-mode='dark'] .qvm-ip-detail {
   height: 15px;
   border-radius: 2px;
   background: var(--qvm-grad);
-  box-shadow: 0 0 8px rgba(45, 212, 191, 0.6);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
 }
 .qvm-monitor-ops {
   display: flex;
