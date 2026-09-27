@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QVMConsole 文档手册</title>
+<title>luycloud 文档手册</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
 :root {
   --bg: #1a1a2e;
@@ -116,7 +117,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 <!-- ====== Sidebar ====== -->
 <nav class="sidebar" id="sidebar">
-  <h2>📖 QVMConsole 文档</h2>
+  <h2 style="display:flex;align-items:center;gap:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="21" fill="none" viewBox="0 0 48 46" style="flex-shrink:0;"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z"/></svg>luycloud 文档</h2>
   <button class="sync-btn" id="syncBtn" onclick="startSync()"><span class="spinner"></span><span class="label-text">🔄 同步线上最新文档</span></button>
   <div class="toc-l1"><a href="#part1">第一部分：安装与使用</a></div>
   <div class="toc-l2"><a href="#s1.1">1. 部署</a></div>
@@ -137,7 +138,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   <div class="toc-l1"><a href="#part2">第二部分：功能与原理</a></div>
   <div class="toc-l2"><a href="#s2.1">1. 功能与架构</a></div>
   <div class="toc-l3"><a href="#s2.1.1">虚拟化概述</a></div>
-  <div class="toc-l3"><a href="#s2.1.2">QVMConsole 架构</a></div>
+  <div class="toc-l3"><a href="#s2.1.2">luycloud 架构</a></div>
   <div class="toc-l3"><a href="#s2.1.3">虚拟机迁移</a></div>
   <div class="toc-l3"><a href="#s2.1.4">系统初始化原理</a></div>
   <div class="toc-l3"><a href="#s2.1.5">模板管理原理</a></div>
@@ -158,6 +159,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   <div class="toc-l3"><a href="#s2.3.3">安全组策略</a></div>
   <div class="toc-l3"><a href="#s2.3.4">端口转发</a></div>
   <div class="toc-l3"><a href="#s2.3.5">ACL 管理</a></div>
+  <div class="toc-l3"><a href="#s2.3.6">端口安全</a></div>
+  <div class="toc-l3"><a href="#s2.3.7">端口镜像</a></div>
   <div class="toc-l2"><a href="#s2.4">4. 公网 IP</a></div>
   <div class="toc-l2"><a href="#s2.5">5. 防火墙</a></div>
   <div class="toc-l3"><a href="#s2.5.1">宿主机防火墙</a></div>
@@ -175,8 +178,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 <main class="main">
 
 <p style="color:var(--text2); margin-bottom:4px;">来源: <a href="https://qvmcdocs.xiaozhuhouses.asia/">qvmcdocs.xiaozhuhouses.asia</a></p>
-<h1>QVMConsole 完整文档手册</h1>
-<p style="color:var(--text2)">基于 KVM/QEMU 构建的轻量级虚拟机管理面板 · 文档版本: 2026-06</p>
+<div style="display:flex;align-items:center;gap:16px;margin:8px 0 4px;">
+  <img src="favicon.svg" alt="luycloud logo" width="56" height="54" style="flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(126,20,255,.35));">
+  <h1 style="margin:0;border:none;padding:0;">luycloud 完整文档手册</h1>
+</div>
+<p style="color:var(--text2)">基于 KVM/QEMU 构建的轻量级虚拟机管理面板 · 文档版本: 2026-09</p>
+<img src="logo.jpg" alt="luycloud 控制台预览" style="width:100%;max-width:960px;border-radius:10px;border:1px solid var(--border);margin:12px 0 24px;box-shadow:0 4px 24px rgba(0,0,0,.35);">
 
 <!-- ============================================================ -->
 <!-- 第一部分 -->
@@ -216,9 +223,41 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 reboot</pre>
 
 <h3 id="s1.1.3">部署方法</h3>
-<h4>面板管理脚本</h4>
-<pre>wget https://download.qvmconsole.xiaozhuhouses.asia/app1/latest/qvmc-manage.sh
-bash qvmc-manage.sh</pre>
+
+<h4>方式一：使用发行包一键部署（推荐）</h4>
+<pre># 1. 下载并解压发行包（amd64 / arm64）
+tar -xzf luycloud-linux-amd64.tar.gz
+cd luycloud-linux-amd64
+
+# 2. 以 root 运行一键安装脚本
+sudo bash install.sh</pre>
+<p>脚本会依次执行：硬件虚拟化检测 → 依赖安装 → 用户存储初始化 → 网络地基（OVS/DHCP/转发）→ systemd 服务注册 → 启动服务。安装完成后终端会打印访问地址。</p>
+<ul>
+<li>访问地址：<code>http://&lt;服务器IP&gt;:8080</code></li>
+<li>默认账号：<code>admin</code> / <code>admin123</code>（首次登录请立即修改）</li>
+</ul>
+<p style="color:var(--text2);">安装脚本为交互式，可按提示选择存储磁盘、容量、Web 端口、是否开启公网访问、是否运行兼容性实机测试。</p>
+
+<h4>方式二：从源码构建</h4>
+<p>需要 Go 1.27+ 与 Node.js 22+（Vite 8 / rolldown 要求 Node ≥ 20.19）。</p>
+<pre># 构建前端 + 后端并生成发行包
+bash build.sh --variant native      # 使用宿主机原生编译
+# 或
+bash build.sh                       # 同时构建 zig 兼容版（需安装 zig）
+
+# 产物位于 release/luycloud-linux-&lt;arch&gt;.tar.gz
+# 解压后 sudo bash install.sh 即可部署</pre>
+<p style="color:var(--text2);">国内网络构建提示：Go 依赖可设 <code>GOPROXY=https://goproxy.cn,direct</code>；前端依赖需 Node ≥ 20.19 以正确安装 rolldown 原生绑定。</p>
+
+<h4>开发模式</h4>
+<pre>bash start-dev.sh
+# 后端 air 热重载 (:8080)，前端 vite (:5173)</pre>
+
+<h4>常用运维命令</h4>
+<pre>systemctl status kvm-console      # 查看服务状态
+journalctl -u kvm-console -f      # 查看实时日志
+systemctl restart kvm-console     # 重启服务
+sudo bash qvmc-manage.sh          # 账户与安全管理（重置密码、清除 2FA、改端口、公网开关等）</pre>
 
 <div class="warn"><strong>使用协议：</strong>使用本软件前请务必阅读并同意用户协议与内测须知。</div>
 
@@ -229,7 +268,7 @@ bash qvmc-manage.sh</pre>
 <h3 id="s1.2.1">基础设施配置</h3>
 
 <h4>创建网络</h4>
-<p>QVMConsole 采用 OVS（Open vSwitch）交换机体系，提供两种网络模式：</p>
+<p>luycloud 采用 OVS（Open vSwitch）交换机体系，提供两种网络模式：</p>
 
 <h4>NAT 模式（公有云推荐）</h4>
 <p>虚拟机不需要从外部直接访问的场景。系统内部 DHCP 服务统一管理网络和分配 IP，若需从外部访问虚拟机，可使用端口转发功能。</p>
@@ -385,9 +424,9 @@ sudo reboot</pre>
 <table>
 <tr><th>状态</th><th>说明</th><th>可执行操作</th></tr>
 <tr><td>创建中</td><td>正在通过任务队列创建虚拟机</td><td>无</td></tr>
-<tr><td>关机</td><td>虚拟机已停止</td><td>启动、编辑、删除、克隆</td></tr>
-<tr><td>运行</td><td>虚拟机正在运行</td><td>关机、重启、暂停、VNC</td></tr>
-<tr><td>暂停</td><td>内存状态保留</td><td>恢复、强制关机</td></tr>
+<tr><td>关机</td><td>虚拟机已停止</td><td>开机、编辑、删除、克隆、重装、救援</td></tr>
+<tr><td>运行</td><td>虚拟机正在运行</td><td>关机、强制断电、重启、重置、VNC/SPICE 连接</td></tr>
+<tr><td>迁移中</td><td>虚拟机正在跨节点迁移</td><td>等待迁移完成（电源/配置/删除均被阻止）</td></tr>
 </table>
 
 <h4>QCOW2 vs RAW 格式</h4>
@@ -400,57 +439,73 @@ sudo reboot</pre>
 <tr><td>空间效率</td><td>高</td><td>低</td></tr>
 </table>
 
-<h3 id="s2.1.2">QVMConsole 架构</h3>
+<h3 id="s2.1.2">luycloud 架构</h3>
 
 <h4>后端技术栈</h4>
 <table>
 <tr><th>组件</th><th>技术</th></tr>
-<tr><td>Web 框架</td><td>Gin (Go)</td></tr>
-<tr><td>虚拟化 API</td><td>go-libvirt（UNIX Socket RPC）</td></tr>
-<tr><td>数据库</td><td>SQLite + GORM</td></tr>
-<tr><td>任务队列</td><td>自研，基于 goroutine + SSE</td></tr>
-<tr><td>网络虚拟化</td><td>Open vSwitch</td></tr>
+<tr><td>语言与运行时</td><td>Go 1.26（单二进制部署）</td></tr>
+<tr><td>Web 框架</td><td>Gin v1.12</td></tr>
+<tr><td>虚拟化 API</td><td>go-libvirt（digitalocean/go-libvirt，UNIX Socket RPC）</td></tr>
+<tr><td>数据库</td><td>SQLite + GORM v1.31（WAL 模式，自动迁移）</td></tr>
+<tr><td>任务队列</td><td>自研，基于 goroutine + 有界 channel + SSE 推送</td></tr>
+<tr><td>WebSocket</td><td>gorilla/websocket v1.5（VNC 代理等）</td></tr>
+<tr><td>认证</td><td>JWT（HS256）+ TOTP，会话指纹绑定</td></tr>
+<tr><td>日志</td><td>slog + lumberjack（分类日志、按大小/日期轮转）</td></tr>
+<tr><td>网络虚拟化</td><td>Open vSwitch（VLAN 隔离、OpenFlow、TC/QoS）</td></tr>
 </table>
 
 <h4>前端技术栈</h4>
 <table>
 <tr><th>组件</th><th>技术</th></tr>
-<tr><td>框架</td><td>Vue.js 3</td></tr>
-<tr><td>构建工具</td><td>Vite</td></tr>
-<tr><td>状态管理</td><td>Pinia</td></tr>
-<tr><td>UI 组件库</td><td>Element Plus</td></tr>
-<tr><td>HTTP 客户端</td><td>Axios</td></tr>
+<tr><td>框架</td><td>React 19 + TypeScript</td></tr>
+<tr><td>构建工具</td><td>Vite 8（开发环境代理 /api 至后端）</td></tr>
+<tr><td>状态管理</td><td>Zustand 5（localStorage 持久化）</td></tr>
+<tr><td>UI 组件库</td><td>Semi Design（@douyinfe/semi-ui）</td></tr>
+<tr><td>HTTP 客户端</td><td>Axios（拦截器 / 428 二次验证重试）</td></tr>
+<tr><td>路由</td><td>react-router 8（createBrowserRouter，全站懒加载）</td></tr>
+<tr><td>图表 / 终端 / VNC</td><td>ECharts 6 / @xterm/xterm / @novnc/novnc</td></tr>
 </table>
 
 <h4>中间件链</h4>
 <table>
 <tr><th>中间件</th><th>功能</th></tr>
+<tr><td>RequestLoggerMiddleware</td><td>记录请求路径、方法、状态码、耗时、来源 IP 与用户</td></tr>
+<tr><td>SafeRecoveryMiddleware</td><td>panic 兜底，避免单请求导致进程退出</td></tr>
 <tr><td>CORSMiddleware</td><td>处理跨域请求</td></tr>
-<tr><td>RateLimitMiddleware</td><td>API 请求频率控制</td></tr>
-<tr><td>AuthMiddleware</td><td>JWT/API Key 验证</td></tr>
+<tr><td>SecurityHeadersMiddleware</td><td>注入安全头（nosniff/DENY/CSP 等），API 响应禁用缓存</td></tr>
+<tr><td>RequestFilterMiddleware</td><td>过滤危险路径、扫描器探测、超长参数与危险请求体</td></tr>
+<tr><td>RequestGuardMiddleware</td><td>请求体大小限制（默认 2MB，上传路径豁免）与 Content-Type 校验</td></tr>
+<tr><td>RateLimitMiddleware</td><td>按 IP 滑动窗口限流（公开接口默认 20 次/分钟）</td></tr>
+<tr><td>AuthMiddleware</td><td>JWT / API Key 双通道验证，注入身份并校验会话指纹</td></tr>
+<tr><td>ForcePasswordChangeMiddleware</td><td>强制修改初始/重置密码后才能继续访问</td></tr>
 <tr><td>AdminMiddleware</td><td>管理员权限验证</td></tr>
+<tr><td>ElasticCloudOnlyMiddleware</td><td>轻量云用户功能限制</td></tr>
 <tr><td>VMAccessMiddleware</td><td>虚拟机归属权限验证</td></tr>
 </table>
 
 <h4>任务队列</h4>
-<p>采用"生产者-消费者"模型，默认 3 个工作线程。支持的任务类型：clone、linked_clone、batch、create、reinstall、delete、snapshot、migration、import、export、template、firewall_apply 等。</p>
+<p>采用"生产者-消费者"模型，默认 3 个工作协程、队列容量 100，结合 SSE 实现前端实时进度推送。系统共定义约 50 种任务类型（<code>server/model/task.go</code>），涵盖虚拟机生命周期（create/delete/reinstall/make_vm_independent）、克隆（clone/linked_clone/batch）、模板（prepare/template_export/template_import）、快照、迁移（vm_migrate/vm_disk_migrate）、导入导出、磁盘扩容、用户、网络防火墙、存储、控制台与安全等分组。任务记录为<strong>纯内存存储</strong>，服务重启后清空；参数中的 password/token/secret 等键自动脱敏为 <code>******</code>；每小时清理创建超过 24 小时的已结束任务；同一资源已有活跃任务时重复提交会被拒绝。</p>
 
 <h4>SSE 实时推送</h4>
 <table>
 <tr><th>端点</th><th>内容</th><th>频率</th></tr>
-<tr><td>/api/vm/sse</td><td>VM 列表状态</td><td>2 秒</td></tr>
+<tr><td>/api/vm/sse、/api/self/vms/sse</td><td>VM 列表状态（管理员/用户分流）</td><td>2 秒</td></tr>
 <tr><td>/api/vm/:name/sse</td><td>单个 VM 详情</td><td>3 秒</td></tr>
-<tr><td>/api/host/stats/sse</td><td>宿主机资源</td><td>5 秒</td></tr>
+<tr><td>/api/host/stats/sse</td><td>宿主机资源统计</td><td>5 秒</td></tr>
 <tr><td>/api/task/sse</td><td>任务进度</td><td>实时</td></tr>
+<tr><td>/api/scheduler/events/sse</td><td>调度事件</td><td>实时</td></tr>
 </table>
+<p>SSE 不走 Axios，前端使用浏览器原生 <code>EventSource</code> 携带登录令牌建立连接，断线后按固定间隔（5 秒）自动重连，任务 SSE 按用户归属过滤事件。</p>
 
 <h4>JWT 令牌类型</h4>
 <table>
 <tr><th>类型</th><th>用途</th><th>有效期</th></tr>
-<tr><td>访问令牌</td><td>常规 API 访问</td><td>较短</td></tr>
-<tr><td>引导令牌</td><td>首次登录后初始化</td><td>短</td></tr>
-<tr><td>登录验证令牌</td><td>二次验证（TOTP）</td><td>极短</td></tr>
-<tr><td>高风险令牌</td><td>敏感操作</td><td>极短</td></tr>
+<tr><td>访问令牌（access）</td><td>常规 API 访问，支持会话指纹绑定</td><td>默认 24 小时</td></tr>
+<tr><td>引导令牌（bootstrap）</td><td>首次登录安全初始化（SMTP/邮箱/2FA）</td><td>30 分钟</td></tr>
+<tr><td>登录验证令牌（login）</td><td>二次验证（TOTP/恢复码/邮箱验证码）</td><td>15 分钟</td></tr>
+<tr><td>高风险令牌（high_risk）</td><td>敏感操作，携带操作范围，X-High-Risk-Token 头</td><td>5 分钟</td></tr>
+<tr><td>找回密码令牌</td><td>邮箱选择账户 / 重置密码</td><td>10 / 15 分钟</td></tr>
 </table>
 
 <h3 id="s2.1.3">虚拟机迁移</h3>
@@ -680,6 +735,19 @@ sudo reboot</pre>
 <li>规则模板、备份与恢复、规则监控</li>
 </ul>
 
+<h3 id="s2.3.6">端口安全</h3>
+<ul>
+<li>OVS 端口反欺骗：基于 OpenFlow 流表限制 MAC/IP 伪造</li>
+<li>端口速率限制：基于 OVS QoS / ingress policing 控制单端口带宽</li>
+<li>与 VPC 交换机安全策略（杂模式/MAC 变更/防伪传输）联动</li>
+</ul>
+
+<h3 id="s2.3.7">端口镜像</h3>
+<ul>
+<li>基于 <code>tc mirred</code> 与 OVS FLOOD 实现宿主机流量镜像</li>
+<li>可将指定 VM 端口流量复制到镜像目标用于抓包/诊断</li>
+</ul>
+
 <hr>
 
 <h2 id="s2.4">4. 公网 IP</h2>
@@ -865,9 +933,9 @@ sudo reboot</pre>
 
 <hr>
 
-<p style="color:var(--text2);text-align:center;padding:10px 0;">📥 上次同步: 2026-06-23 11:47:09 · 共抓取 41 个页面</p><p style="color:var(--text2); text-align:center; padding:40px 0;">
-QVMConsole 文档手册 · 基于 KVM/QEMU 构建的轻量级虚拟机管理面板<br>
-文档生成: 2026-06-23 · 已同步 41 页 · 来源: <a href="https://qvmcdocs.xiaozhuhouses.asia/">qvmcdocs.xiaozhuhouses.asia</a>
+<p style="color:var(--text2);text-align:center;padding:10px 0;">📥 上次同步: 2026-09-26 · 已按线上最新文档与仓库源码校准架构章节</p><p style="color:var(--text2); text-align:center; padding:40px 0;">
+luycloud 文档手册 · 基于 KVM/QEMU 构建的轻量级虚拟机管理面板<br>
+文档生成: 2026-09-26 · 来源: <a href="https://qvmcdocs.xiaozhuhouses.asia/">qvmcdocs.xiaozhuhouses.asia</a>
 </p>
 
 <!-- Sync Modal -->
@@ -882,7 +950,7 @@ QVMConsole 文档手册 · 基于 KVM/QEMU 构建的轻量级虚拟机管理面�
       <ol>
         <li>打开终端进入此文件所在目录</li>
         <li>运行 <code>python3 -m http.server 8080</code></li>
-        <li>浏览器访问 <code>http://localhost:8080/QVMConsole_文档手册.html</code></li>
+        <li>浏览器访问 <code>http://localhost:8080/luycloud_文档手册.html</code></li>
         <li>回到本页点击「同步线上最新文档」即可</li>
       </ol>
       <p><strong>方式二：使用同步脚本（命令行）</strong></p>
@@ -929,7 +997,7 @@ const SYNC_PAGES = [
   '/docs/install/common-questions/panel-issues', '/docs/install/common-questions/known-errors',
   '/docs/install/quick-start/infrastructure-config', '/docs/install/quick-start/template-management',
   '/docs/install/advanced/create-template', '/docs/install/advanced/install-windows', '/docs/install/advanced/install-linux',
-  '/docs/tech/', '/docs/tech/feature-analysis/virtualization-overview',
+  '/docs/tech/', '/docs/tech/workbench', '/docs/tech/feature-analysis/virtualization-overview',
   '/docs/tech/feature-analysis/qvmconsole-architecture', '/docs/tech/feature-analysis/vm-migration',
   '/docs/tech/feature-analysis/system-initialization', '/docs/tech/feature-analysis/template-management',
   '/docs/tech/virtual-machine/creation-modes', '/docs/tech/virtual-machine/basic-config',
@@ -937,12 +1005,16 @@ const SYNC_PAGES = [
   '/docs/tech/virtual-machine/network-config', '/docs/tech/virtual-machine/system-config',
   '/docs/tech/virtual-machine/advanced-settings', '/docs/tech/virtual-machine/hardware-passthrough',
   '/docs/tech/virtual-machine/snapshot-management', '/docs/tech/virtual-machine/disk-migration-expansion',
+  '/docs/tech/virtual-machine/vm-list-operations', '/docs/tech/virtual-machine/remote-console',
+  '/docs/tech/virtual-machine/import-export', '/docs/tech/virtual-machine/reinstall-rescue',
   '/docs/tech/network/overview', '/docs/tech/network/vpc-switch',
   '/docs/tech/network/security-group', '/docs/tech/network/port-forward', '/docs/tech/network/acl',
+  '/docs/tech/network/port-security', '/docs/tech/network/port-mirror',
   '/docs/tech/public-ip/public-ip-management',
   '/docs/tech/firewall/host-firewall', '/docs/tech/firewall/kvm-firewall', '/docs/tech/firewall/connection-mgmt',
   '/docs/tech/storage-pool/storage-pool-management', '/docs/tech/node-manage/node-management',
   '/docs/tech/my-storage/my-storage-management', '/docs/tech/user-manage/user-management',
+  '/docs/tech/user-manage/security-center', '/docs/tech/user-manage/api-console-auth',
   '/docs/tech/scheduler/scheduler-events', '/docs/tech/system-settings/'
 ];
 const BASE = 'https://qvmcdocs.xiaozhuhouses.asia';
