@@ -2,7 +2,7 @@
 # ============================================================
 # luycloud 本地打包脚本
 # 构建前端 + 后端，自动检测宿主机架构，支持原生/交叉编译
-# 产物: kvm-console-linux-{amd64|arm64}.tar.gz
+# 产物: luycloud-linux-{amd64|arm64}.tar.gz
 # ============================================================
 
 set -Eeuo pipefail
@@ -166,7 +166,7 @@ BUILD_VERSION="v${VERSION}"
 BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # 根据目标架构确定输出名和 Go 编译参数
-OUTPUT_NAME="kvm-console-linux-${TARGET_ARCH}"
+OUTPUT_NAME="luycloud-linux-${TARGET_ARCH}"
 GOARCH_VALUE="$TARGET_ARCH"  # Go GOARCH 与我们的命名一致（amd64/arm64）
 IS_CROSS_COMPILE=false
 if [ "$TARGET_ARCH" != "$HOST_ARCH" ]; then

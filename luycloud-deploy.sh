@@ -322,7 +322,7 @@ build_release() {
     ( cd "$SRC_DIR" && bash build.sh --variant "$BUILD_VARIANT" )
 
     # 定位构建产物目录
-    local out_name="kvm-console-linux-${GO_ARCH}"
+    local out_name="luycloud-linux-${GO_ARCH}"
     local release_dir="${SRC_DIR}/release/${out_name}"
     if [ ! -d "$release_dir" ] || [ ! -f "${release_dir}/install.sh" ]; then
         error "构建产物缺失: ${release_dir}（未找到 install.sh）"

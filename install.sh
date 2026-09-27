@@ -1930,10 +1930,10 @@ get_release() {
     # 按架构确定安装包名称与下载链接
     local local_tarball_name download_url
     if [ "$ARCH" = "x86_64" ]; then
-        local_tarball_name="kvm-console-linux-amd64.tar.gz"
+        local_tarball_name="luycloud-linux-amd64.tar.gz"
         download_url="$DOWNLOAD_URL_AMD64"
     elif [ "$ARCH" = "aarch64" ]; then
-        local_tarball_name="kvm-console-linux-arm64.tar.gz"
+        local_tarball_name="luycloud-linux-arm64.tar.gz"
         download_url="$DOWNLOAD_URL_ARM64"
     fi
 
