@@ -33,7 +33,26 @@ luycloud 是一个面向小型企业和个人私有云服务场景的开源虚�
 
 luycloud 提供一键安装脚本，自动完成依赖安装（libvirt / qemu-kvm / Open vSwitch 等）、用户存储、systemd 服务注册与启动。
 
-### 方式一：使用发行包一键部署（推荐）
+### 方式一：一键远程部署（推荐）
+
+无需手动下载源码，脚本会自动克隆最新源码、准备 Go/Node 工具链、本地编译并进入交互式安装：
+
+```bash
+# 以 root 运行（二选一）
+bash <(curl -fsSL https://raw.githubusercontent.com/luolu1/luycloud/main/luycloud-deploy.sh)
+bash <(wget -qO- https://raw.githubusercontent.com/luolu1/luycloud/main/luycloud-deploy.sh)
+```
+
+引导脚本会依次执行：CPU 架构检测 → 检测/自动安装 git、Go、Node.js 工具链 → 克隆或更新 `main` 分支源码 → `build.sh` 本地编译前端 + 后端 → 调用 `install.sh` 完成交互式安装。已安装时脚本自动切换为「更新 / 卸载」菜单。
+
+- 访问地址：`http://<服务器IP>:8080`
+- 默认账号：`admin` / `admin123`（首次登录请立即修改）
+
+> 直接克隆源码编译，始终与仓库 `main` 分支保持实时同步。可用环境变量覆盖行为：`LUYCLOUD_GIT`（仓库地址）、`LUYCLOUD_BRANCH`（分支）、`LUYCLOUD_SRC`（源码检出目录，默认 `/opt/luycloud-src`）、`LUYCLOUD_VARIANT`（`native` 原生版 / `compat` zig 兼容版，默认 `native`）、`GOPROXY`（国内加速）。
+
+### 方式二：使用发行包一键部署
+
+若已有构建好的发行包：
 
 ```bash
 # 1. 下载并解压发行包（amd64 / arm64）
@@ -46,12 +65,9 @@ sudo bash install.sh
 
 脚本会依次执行：硬件虚拟化检测 → 依赖安装 → 用户存储初始化 → 网络地基（OVS/DHCP/转发）→ systemd 服务注册 → 启动服务。安装完成后终端会打印访问地址。
 
-- 访问地址：`http://<服务器IP>:8080`
-- 默认账号：`admin` / `admin123`（首次登录请立即修改）
-
 > 安装脚本为交互式，可按提示选择存储磁盘、容量、Web 端口、是否开启公网访问、是否运行兼容性实机测试。
 
-### 方式二：从源码构建
+### 方式三：从源码手动构建
 
 需要 Go 1.27+ 与 Node.js 22+（Vite 8 / rolldown 要求 Node ≥ 20.19）。
 
