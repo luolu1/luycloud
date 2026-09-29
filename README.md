@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img width="2549" height="1333" alt="image" src="https://i.111666.best/image/3eD0K45LfDMjYaH7eTtnwl.jpg" />
+<img width="1280" height="625" alt="luycloud 管理界面预览" src="README-preview.jpg" />
 
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
