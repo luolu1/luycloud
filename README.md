@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img width="2549" height="1333" alt="image" src="https://github.com/user-attachments/assets/1706a4b4-ac20-45cc-8612-1b2947dc5151" />
+<img width="2549" height="1333" alt="image" src="https://i.111666.best/image/3eD0K45LfDMjYaH7eTtnwl.jpg" />
 
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
