@@ -655,6 +655,7 @@ func ReinstallVm(c *gin.Context) {
 type DeleteVmRequest struct {
 	DeleteDisks   []string `json:"delete_disks"`   // 要删除的磁盘路径列表
 	TransferDisks []string `json:"transfer_disks"` // 要转移到用户存储的磁盘路径列表
+	SkipRecycle   bool     `json:"skip_recycle"`   // true=跳过回收站直接永久删除；false/缺省=移入回收站
 }
 
 // DeleteVm 删除虚拟机（异步任务）
@@ -700,6 +701,7 @@ func DeleteVm(c *gin.Context) {
 		"delete_disks":   req.DeleteDisks,
 		"transfer_disks": req.TransferDisks,
 		"transfer_user":  usernameStr,
+		"skip_recycle":   req.SkipRecycle,
 	}
 
 	task, err := taskqueue.SubmitWithStruct(model.TaskTypeDelete, params, usernameStr)

@@ -21,6 +21,7 @@ import (
 	"kvm_console/service/guestfs"
 	"kvm_console/service/libvirt_rpc"
 	netpkg "kvm_console/service/network"
+	recyclepkg "kvm_console/service/recycle"
 	"kvm_console/service/snapshot"
 	vmmigration "kvm_console/service/vm/migration"
 	vmimport "kvm_console/service/vm/vmimport"
@@ -108,6 +109,9 @@ func main() {
 	// 初始化 clone 子包依赖
 	initCloneDeps()
 
+	// 初始化 recycle 子包依赖
+	initRecycleDeps()
+
 	// 注册任务处理器
 	registerTaskHandlers()
 
@@ -122,6 +126,7 @@ func main() {
 	service.StartExpiredUploadSessionCleanup() // 清理过期分片上传会话
 	service.StartPasswordBreachScheduler()
 	service.StartStorageTrimScheduler()
+	service.StartVMRecycleSweeper()
 	service.StartUserSessionCleanup()
 
 	// 同步 SSH 拒绝配置（确保与数据库状态一致）
@@ -554,6 +559,7 @@ func registerTaskHandlers() {
 			TransferUser        string   `json:"transfer_user"`
 			LightweightUsername string   `json:"lightweight_username"`
 			Action              string   `json:"action"`
+			SkipRecycle         bool     `json:"skip_recycle"`
 		}
 		if err := json.Unmarshal([]byte(task.Params), &params); err != nil {
 			return "", fmt.Errorf("解析参数失败: %w", err)
@@ -585,6 +591,34 @@ func registerTaskHandlers() {
 		}
 
 		progress(10, "开始删除虚拟机...")
+
+		// 默认软删除：skip_recycle=false/缺省时移入回收站，仅 skip_recycle=true 走下方永久删除逻辑
+		if !params.SkipRecycle {
+			progress(10, "正在移入回收站...")
+			source := model.VMRecycleSourceUserDelete
+			if task.CreatedBy == "admin" {
+				source = model.VMRecycleSourceAdminDelete
+			}
+			item, err := recyclepkg.SoftDeleteVM(recyclepkg.SoftDeleteOptions{
+				VMName:    params.Name,
+				Source:    source,
+				DeletedBy: task.CreatedBy,
+			}, progress)
+			if err != nil {
+				return "", err
+			}
+			// 软删除已在 releaseBindings 内处理用户列表/缓存/绑定清理
+			if task.CreatedBy != "" && task.CreatedBy != "admin" {
+				go func() {
+					defer utils.RecoverAndLog("main-recycle-rebalance")
+					if err := service.RebalanceUserBandwidth(task.CreatedBy); err != nil {
+						logger.App.Warn("移入回收站后重新分配用户带宽失败", "user", task.CreatedBy, "error", err)
+					}
+				}()
+			}
+			progress(100, "虚拟机已移入回收站")
+			return fmt.Sprintf(`{"vm_name":"%s","recycled":true,"item_id":%d}`, params.Name, item.ID), nil
+		}
 
 		var err error
 		if len(params.DeleteDisks) > 0 || len(params.TransferDisks) > 0 {
@@ -619,6 +653,31 @@ func registerTaskHandlers() {
 		}
 		progress(100, "虚拟机已删除")
 		return fmt.Sprintf(`{"vm_name":"%s"}`, params.Name), nil
+	})
+
+	// 从回收站恢复虚拟机任务
+	taskqueue.RegisterHandler(model.TaskTypeRecycleRestore, func(ctx context.Context, task *model.Task, progress func(int, string)) (string, error) {
+		var params recyclepkg.RestoreTaskParams
+		if err := json.Unmarshal([]byte(task.Params), &params); err != nil {
+			return "", fmt.Errorf("解析参数失败: %w", err)
+		}
+		item, err := recyclepkg.RestoreVM(params.ItemID, task.CreatedBy, progress)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf(`{"vm_name":"%s"}`, item.VMName), nil
+	})
+
+	// 永久清除回收站虚拟机任务
+	taskqueue.RegisterHandler(model.TaskTypeRecyclePurge, func(ctx context.Context, task *model.Task, progress func(int, string)) (string, error) {
+		var params recyclepkg.PurgeTaskParams
+		if err := json.Unmarshal([]byte(task.Params), &params); err != nil {
+			return "", fmt.Errorf("解析参数失败: %w", err)
+		}
+		if err := recyclepkg.PurgeItem(params.ItemID, task.CreatedBy, progress); err != nil {
+			return "", err
+		}
+		return "{}", nil
 	})
 
 	// 虚拟机定时任务动作
@@ -1480,6 +1539,35 @@ func initCloneDeps() {
 		InjectSPICEGraphics:   service.InjectSPICEGraphicsToDomainXML,
 		EnsureQXLVideo:        service.EnsureQXLVideo,
 		SpiceEnabledByDefault: func() bool { return config.GlobalConfig.SpiceEnabledByDefault },
+	})
+}
+
+// initRecycleDeps 初始化 recycle 子包的依赖注入
+func initRecycleDeps() {
+	recyclepkg.InitDeps(&recyclepkg.Deps{
+		// 用户 / 归属
+		FindVMOwner:            service.FindVMOwner,
+		AddVMToUser:            service.AddVMToUser,
+		RemoveVMFromUser:       service.RemoveVMFromUser,
+		GetUserCloudType:       service.GetUserCloudType,
+		IsLightweightCloudType: service.IsLightweightCloudType,
+
+		// VM 缓存 / 清理
+		RefreshVMCacheByName:          service.RefreshVMCacheByName,
+		MarkVMCacheMissing:            service.MarkVMCacheMissing,
+		DeleteVMStatsRecords:          service.DeleteVMStatsRecords,
+		DeleteVMRuntimeRecord:         service.DeleteVMRuntimeRecord,
+		CleanupVMVPCBinding:           service.CleanupVMVPCBinding,
+		CleanupLightweightVMResources: service.CleanupLightweightVMResources,
+		DeleteVMSchedules:             service.DeleteVMSchedules,
+		DeleteVMCredential:            service.DeleteVMCredential,
+
+		// 网络绑定
+		BindVMToVPCAsAdmin:         service.BindVMToVPCAsAdmin,
+		EnsureLightweightVMNetwork: service.EnsureLightweightVMNetwork,
+
+		// 迁移互斥
+		EnsureVMNotMigrating: service.EnsureVMNotMigrating,
 	})
 }
 

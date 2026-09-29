@@ -20,6 +20,12 @@ func ValidateVMName(name string) error {
 	if !vmNameRegexp.MatchString(trimmedName) {
 		return fmt.Errorf("虚拟机名称只能包含字母、数字和短横线，且不能以短横线开头或结尾")
 	}
+	// 回收站名称占用检查（hook 未注入时跳过，保持独立可用性）
+	if D != nil && D.EnsureNameNotRecycled != nil {
+		if err := D.EnsureNameNotRecycled(trimmedName); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

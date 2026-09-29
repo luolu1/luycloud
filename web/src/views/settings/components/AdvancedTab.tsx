@@ -77,6 +77,15 @@ export default function AdvancedTab({ form, patch }: SettingsTabProps) {
           max={2160}
           tip="默认 168，小于该时长的调度事件会被后台定时清理"
         />
+        <NumField
+          label="回收站保留"
+          suffix="天"
+          value={form.vm_recycle_retention_days}
+          onChange={(v) => patch({ vm_recycle_retention_days: v })}
+          min={0}
+          max={3650}
+          tip="默认 7，0 = 不自动清除；到期后回收站中的虚拟机将被永久删除 | 环境变量: KVM_VM_RECYCLE_RETENTION_DAYS"
+        />
       </div>
       <div className="stg-plain-tip">
         环境变量: KVM_SCHEDULER_EVENT_RETENTION_HOURS

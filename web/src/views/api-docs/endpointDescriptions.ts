@@ -408,7 +408,25 @@ export const endpointDescriptions: Record<string, EndpointDescription> = {
     summary: '删除 VM 指定网口',
     notes: ['普通用户（弹性云）仅能删除本人虚拟机的附加网口（order > 0），主网口由 VPC 绑定管理。'],
   },
-  'DELETE /vm/:name': { summary: '删除虚拟机', body: 'JSON: delete_disks, transfer_disks, transfer_user' },
+  'DELETE /vm/:name': {
+    summary: '删除虚拟机',
+    body: 'JSON: skip_recycle(bool, true=跳过回收站直接永久删除；false/缺省=移入回收站软删除), delete_disks, transfer_disks, transfer_user（仅 skip_recycle=true 时生效）',
+  },
+  'GET /vm/recycle': {
+    summary: '获取回收站虚拟机列表',
+    response: 'data: VmRecycleItem[]（管理员返回全部条目，附 retention_days 保留天数）。',
+    notes: ['被软删除的虚拟机会进入回收站，磁盘原位保留，可在保留期内恢复。'],
+  },
+  'POST /vm/recycle/:id/restore': {
+    summary: '从回收站恢复虚拟机',
+    response: 'data: task_id。异步任务，恢复后虚拟机保持关机状态。',
+    notes: ['同名虚拟机已存在时会拒绝恢复；快照元数据可能已丢失（磁盘内数据保留）。'],
+  },
+  'POST /vm/recycle/:id/purge': {
+    summary: '永久清除回收站虚拟机',
+    response: 'data: task_id。异步任务，磁盘文件与元数据将被永久删除，不可恢复。',
+    notes: ['存在同名在线虚拟机时会拒绝清除，避免误删磁盘。'],
+  },
   'POST /vm/:name/force-delete': {
     summary: '强制删除虚拟机',
     notes: ['跳过常规校验直接清理 VM 定义与磁盘，仅用于常规删除失败的异常兜底。'],
@@ -887,7 +905,22 @@ export const endpointDescriptions: Record<string, EndpointDescription> = {
     ],
     requiredFields: ['name', 'vcpu', 'ram', 'disk_size'],
   },
-  'DELETE /self/vm/:name': { summary: '用户自助删除自己的 VM', body: 'JSON: delete_disks, transfer_disks' },
+  'DELETE /self/vm/:name': {
+    summary: '用户自助删除自己的 VM',
+    body: 'JSON: skip_recycle(bool, true=跳过回收站直接永久删除；false/缺省=移入回收站软删除), delete_disks, transfer_disks（仅 skip_recycle=true 时生效）',
+  },
+  'GET /self/vm/recycle': {
+    summary: '获取自己的回收站虚拟机列表',
+    response: 'data: VmRecycleItem[]（仅返回本人条目，附 retention_days 保留天数）。',
+  },
+  'POST /self/vm/recycle/:id/restore': {
+    summary: '从回收站恢复自己的虚拟机',
+    response: 'data: task_id。异步任务，恢复后虚拟机保持关机状态。',
+  },
+  'POST /self/vm/recycle/:id/purge': {
+    summary: '永久清除自己回收站中的虚拟机',
+    response: 'data: task_id。异步任务，磁盘文件与元数据将被永久删除，不可恢复。',
+  },
   'GET /self/vm/:name/qcow2-disks': { summary: '获取自己的 VM qcow2 磁盘列表' },
   'POST /self/vm/export': {
     summary: '导出自己的 VM',

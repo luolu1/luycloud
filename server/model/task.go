@@ -69,6 +69,8 @@ const (
 	TaskTypePasswordBreachNotify            = "password_breach_notify"             // 泄露密码通知
 	TaskTypeStorageTrim                     = "storage_trim"                       // 用户存储空间回收
 	TaskTypeVPCSwitchReconfigure            = "vpc_switch_reconfigure"             // VPC 交换机拓扑重配置
+	TaskTypeRecycleRestore                  = "recycle_restore"                    // 从回收站恢复虚拟机
+	TaskTypeRecyclePurge                    = "recycle_purge"                      // 永久清除回收站虚拟机
 )
 
 // Task 异步任务模型（纯内存存储，不持久化）

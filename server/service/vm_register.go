@@ -4,6 +4,7 @@ import (
 	"kvm_console/config"
 	"kvm_console/model"
 	publicippkg "kvm_console/service/public_ip"
+	recyclepkg "kvm_console/service/recycle"
 	schedpkg "kvm_console/service/scheduler"
 	snapshotPkg "kvm_console/service/snapshot"
 	templatepkg "kvm_console/service/template"
@@ -158,6 +159,9 @@ func init() {
 
 		// ---- VM Name ----
 		ValidateVMName: vmpkg.ValidateVMName,
+
+		// ---- Recycle guard ----
+		EnsureNameNotRecycled: recyclepkg.EnsureNameNotRecycled,
 
 		// ---- VM Lock ----
 		IsVMLocked: vmpkg.IsVMLocked,

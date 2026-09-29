@@ -154,6 +154,8 @@ type Deps struct {
 
 	// ---- VM Name ----
 	ValidateVMName func(name string) error
+	// ---- Recycle guard（避免 vm -> recycle 循环 import，由外部注入） ----
+	EnsureNameNotRecycled func(name string) error
 
 	// ---- VM Lock ----
 	IsVMLocked func(vmName string) bool

@@ -1,0 +1,151 @@
+/**
+ * 回收站页样式（深空极光 · 浅色优先 + 深色适配）
+ * 复用虚拟机列表的行内图标操作规范（qvm-act-cell / qvm-act-ic）
+ */
+
+.rcb-page {
+  padding: 4px 2px 24px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ==================== 页头 ==================== */
+.rcb-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.rcb-page-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--qvm-text-0);
+  display: inline-flex;
+  align-items: center;
+}
+.rcb-page-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--qvm-text-2);
+}
+.rcb-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ==================== 区块卡片 ==================== */
+.rcb-section-card {
+  border-radius: 14px;
+  background: var(--qvm-card-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--qvm-card-shadow);
+  border: 1px solid var(--qvm-stroke);
+  padding: 16px;
+  overflow-x: auto;
+}
+
+/* ==================== 来源 / 磁盘展示 ==================== */
+.rcb-source-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rcb-disk-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.4;
+}
+.rcb-disk-count {
+  color: var(--qvm-text-1);
+  font-size: 13px;
+}
+.rcb-disk-size {
+  color: var(--qvm-text-2);
+  font-size: 12px;
+}
+
+/* ==================== 展开行：磁盘路径与警告 ==================== */
+.rcb-expand {
+  padding: 6px 4px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rcb-expand-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--qvm-text-1);
+  margin-bottom: 4px;
+}
+.rcb-disk-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--qvm-text-1);
+  line-height: 1.7;
+}
+.rcb-disk-path {
+  color: var(--qvm-text-2);
+  word-break: break-all;
+}
+.rcb-warning-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--qvm-warn);
+  line-height: 1.6;
+}
+.rcb-warning-line .semi-icon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* ==================== 清除确认弹窗内的磁盘路径 ==================== */
+.rcb-purge-disks {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--qvm-hover-bg);
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.rcb-purge-disk-item {
+  font-size: 12.5px;
+  color: var(--qvm-text-1);
+  word-break: break-all;
+  line-height: 1.7;
+}
+
+/* ==================== 无权限 / 空态 ==================== */
+.rcb-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--qvm-text-2);
+  font-size: 14px;
+}
+
+/* ==================== 深色模式：大面积文字降对比 ==================== */
+body[theme-mode='dark'] .rcb-page-header h2 {
+  color: #b8c1cf;
+}
+
+/* ==================== 响应式 ==================== */
+@media (max-width: 720px) {
+  .rcb-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .rcb-header-actions {
+    width: 100%;
+  }
+}

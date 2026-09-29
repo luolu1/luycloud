@@ -180,6 +180,8 @@ export const TASK_TYPE_TEXT: Record<string, string> = {
   lightweight_vm_provision: '轻量云开通',
   lightweight_runtime_quota_shutdown: '轻量云时长关机',
   delete: '删除虚拟机',
+  recycle_restore: '恢复回收站虚拟机',
+  recycle_purge: '永久清除回收站虚拟机',
   snapshot: '快照操作',
   export: '导出虚拟机',
   import: '导入虚拟机',

@@ -187,6 +187,11 @@ func Setup() *gin.Engine {
 				vm.POST("/:name/force-delete", middleware.ElasticCloudOnlyMiddleware(), middleware.AdminMiddleware(), handler.ForceDeleteVm)
 				vm.GET("/:name/qcow2-disks", handler.GetVmQcow2Disks)
 
+				// 回收站
+				vm.GET("/recycle", handler.GetVmRecycleList)              // 回收站列表
+				vm.POST("/recycle/:id/restore", handler.RestoreVmRecycle) // 从回收站恢复
+				vm.POST("/recycle/:id/purge", handler.PurgeVmRecycle)     // 永久清除
+
 				// 虚拟机锁定管理
 				vm.POST("/:name/lock", middleware.ElasticCloudOnlyMiddleware(), handler.LockVM)
 				vm.POST("/:name/unlock", middleware.ElasticCloudOnlyMiddleware(), handler.UnlockVM)
@@ -500,6 +505,11 @@ func Setup() *gin.Engine {
 				self.POST("/vm/create", middleware.ElasticCloudOnlyMiddleware(), handler.SelfCreateVm)            // 普通创建VM
 				self.DELETE("/vm/:name", middleware.ElasticCloudOnlyMiddleware(), handler.SelfDeleteVm)           // 删除自己的VM
 				self.GET("/vm/:name/qcow2-disks", handler.GetVmQcow2Disks)                                        // 获取qcow2磁盘列表
+
+				// 回收站（我的）
+				self.GET("/vm/recycle", middleware.ElasticCloudOnlyMiddleware(), handler.SelfGetVmRecycleList)          // 我的回收站列表
+				self.POST("/vm/recycle/:id/restore", middleware.ElasticCloudOnlyMiddleware(), handler.RestoreVmRecycle) // 恢复我的回收站虚拟机
+				self.POST("/vm/recycle/:id/purge", middleware.ElasticCloudOnlyMiddleware(), handler.PurgeVmRecycle)     // 永久清除我的回收站虚拟机
 
 				// 虚拟机导出/导入
 				self.GET("/vm/:name/export-options", handler.GetVMExportOptionsHandler)                                          // 获取虚拟机可导出磁盘

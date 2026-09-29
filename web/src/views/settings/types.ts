@@ -59,6 +59,7 @@ export interface SettingsForm {
   default_disk_iops_write: number
   batch_clone_max_concurrency: number
   scheduler_event_retention_hours: number
+  vm_recycle_retention_days: number
   rescue_iso: string
   public_base_url: string
   site_title: string
@@ -133,6 +134,7 @@ export const DEFAULT_SETTINGS_FORM: SettingsForm = {
   default_disk_iops_write: 0,
   batch_clone_max_concurrency: 10,
   scheduler_event_retention_hours: 168,
+  vm_recycle_retention_days: 7,
   rescue_iso: '',
   public_base_url: '',
   site_title: 'luycloud',
@@ -177,6 +179,8 @@ export function validateSettingsForm(form: SettingsForm): string | null {
   if (form.smtp_timeout_seconds < 5) return 'SMTP 超时时间不能小于 5 秒'
   if (form.scheduler_event_retention_hours < 1 || form.scheduler_event_retention_hours > 2160)
     return '调度事件保留时长需在 1 - 2160 小时之间'
+  if (form.vm_recycle_retention_days < 0 || form.vm_recycle_retention_days > 3650)
+    return '回收站保留天数需在 0 - 3650 天之间'
   if (form.public_ipv6_sync_interval_seconds < 10 || form.public_ipv6_sync_interval_seconds > 3600)
     return '公网 IPv6 前缀检测周期需在 10 - 3600 秒之间'
   if (form.port_security_enabled) {
@@ -245,6 +249,7 @@ export function buildSettingsPayload(form: SettingsForm): Record<string, unknown
     default_disk_iops_read: form.default_disk_iops_read,
     default_disk_iops_write: form.default_disk_iops_write,
     scheduler_event_retention_hours: form.scheduler_event_retention_hours,
+    vm_recycle_retention_days: form.vm_recycle_retention_days,
     rescue_iso: form.rescue_iso,
     public_base_url: form.public_base_url,
     site_title: form.site_title?.trim() || 'luycloud',

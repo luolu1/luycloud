@@ -93,7 +93,7 @@ func InitDB() {
 	if err := DB.AutoMigrate(&User{}, &UserAPIKey{}, &UserSession{}, &VmStatsRecord{}, &PortForwardIP{}, &HostStatsRecord{}, &UserTrafficDaily{}, &SystemSetting{}, &VMCredential{}, &VMCache{}, &AuthActionToken{}, &SecurityChallenge{}, &SchedulerEvent{}, &VMSchedule{}, &NetworkBridge{}, &HostStoragePool{}, &HostNode{},
 		&LightweightVMQuota{}, &LightweightVMTrafficMonthly{}, &LightweightVMRegistration{},
 		&VPCSwitch{}, &VPCSecurityGroup{}, &VPCSecurityGroupRule{}, &VPCVMBinding{}, &VPCSwitchTrafficMonthly{}, &PublicIP{}, &PublicIPBinding{},
-		&VMLock{}, &UploadSession{}); err != nil {
+		&VMLock{}, &UploadSession{}, &VMRecycleItem{}); err != nil {
 		logger.App.Error("数据库迁移失败", "error", err)
 		os.Exit(1)
 	}

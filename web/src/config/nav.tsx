@@ -22,6 +22,7 @@ import {
   IconSafeStroked,
   IconCodeStroked,
   IconInfoCircle,
+  IconDeleteStroked,
 } from '@douyinfe/semi-icons'
 
 export interface NavItem {
@@ -47,6 +48,7 @@ export interface NavGroup {
 export const NAV_COLORS: Record<string, string> = {
   dashboard: '#2dd4bf',
   vm: '#38bdf8',
+  'vm-recycle': '#f97316',
   template: '#8b5cf6',
   network: '#f472b6',
   vpc: '#f472b6',
@@ -74,6 +76,7 @@ export const ADMIN_NAV: NavGroup[] = [
     group: '计算',
     items: [
       { key: 'vm', title: '虚拟机', icon: <IconDesktop />, path: '/vm', badge: 'vm', color: NAV_COLORS.vm },
+      { key: 'vm-recycle', title: '回收站', icon: <IconDeleteStroked />, path: '/vm/recycle', color: NAV_COLORS['vm-recycle'] },
       { key: 'template', title: '模板管理', icon: <IconLayers />, path: '/template', color: NAV_COLORS.template },
     ],
   },
@@ -122,6 +125,7 @@ export const USER_NAV: NavGroup[] = [
     group: '计算',
     items: [
       { key: 'vm', title: '我的虚拟机', icon: <IconDesktop />, path: '/vm', badge: 'vm', color: NAV_COLORS.vm },
+      { key: 'vm-recycle', title: '回收站', icon: <IconDeleteStroked />, path: '/vm/recycle', color: NAV_COLORS['vm-recycle'] },
     ],
   },
   {

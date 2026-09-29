@@ -16,6 +16,7 @@ import {
   DashboardPage,
   VmListPage,
   VmDetailPage,
+  VmRecyclePage,
   VncWindowPage,
   TemplateListPage,
   NetworkPage,
@@ -69,6 +70,11 @@ const mainChildren = [
     path: 'vm/detail/:id',
     element: lazyPage(<VmDetailPage />),
     handle: { title: '虚拟机详情' },
+  },
+  {
+    path: 'vm/recycle',
+    element: lazyPage(<VmRecyclePage />),
+    handle: { title: '回收站' },
   },
   {
     path: 'template',

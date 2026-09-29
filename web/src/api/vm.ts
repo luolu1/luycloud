@@ -298,17 +298,80 @@ export function updateVm(name: string, data: UpdateVmPayload) {
   return service.put<unknown, ApiResponse<null>>(`/vm/${encodeURIComponent(name)}`, data)
 }
 
+/** 删除虚拟机入参（skip_recycle=true 时才透传磁盘删除/转移选项） */
+export interface DeleteVmData {
+  delete_disks?: string[]
+  transfer_disks?: string[]
+  /** true = 跳过回收站直接永久删除；false/缺省 = 移入回收站（软删除） */
+  skip_recycle?: boolean
+}
+
 /** 删除虚拟机（管理员） */
-export function deleteVm(name: string, data: { delete_disks?: string[]; transfer_disks?: string[] } = {}) {
+export function deleteVm(name: string, data: DeleteVmData = {}) {
   return service.delete<unknown, ApiResponse<null>>(`/vm/${encodeURIComponent(name)}`, { data })
 }
 
 /** 用户自助删除虚拟机 */
-export function selfDeleteVm(
-  name: string,
-  data: { delete_disks?: string[]; transfer_disks?: string[] } = {},
-) {
+export function selfDeleteVm(name: string, data: DeleteVmData = {}) {
   return service.delete<unknown, ApiResponse<null>>(`/self/vm/${encodeURIComponent(name)}`, { data })
+}
+
+/** 回收站磁盘描述 */
+export interface VmRecycleDisk {
+  device: string
+  path: string
+  format: string
+  is_system: boolean
+  capacity_gb: string
+  size_bytes: number
+}
+
+/** 回收站条目（对应后端 VMRecycleItem） */
+export interface VmRecycleItem {
+  id: number
+  vm_name: string
+  owner: string
+  is_admin: boolean
+  source: 'user_delete' | 'admin_delete' | 'migration'
+  target_node: string
+  status: string
+  note: string
+  warnings: string[]
+  disks: VmRecycleDisk[]
+  total_bytes: number
+  deleted_by: string
+  deleted_at: string
+  expire_at: string
+}
+
+/** 管理员：获取全部回收站条目（含 retention_days 兜底在响应外层） */
+export function getVmRecycleList() {
+  return service.get<unknown, ApiResponse<VmRecycleItem[]>>('/vm/recycle', { silent: true })
+}
+
+/** 用户自助：获取自己的回收站条目 */
+export function selfGetVmRecycleList() {
+  return service.get<unknown, ApiResponse<VmRecycleItem[]>>('/self/vm/recycle', { silent: true })
+}
+
+/** 管理员：从回收站恢复虚拟机（入队任务，高风险需二次验证） */
+export function restoreVmRecycle(id: number) {
+  return service.post<unknown, ApiResponse<{ task_id?: string }>>(`/vm/recycle/${id}/restore`)
+}
+
+/** 用户自助：从回收站恢复自己的虚拟机 */
+export function selfRestoreVmRecycle(id: number) {
+  return service.post<unknown, ApiResponse<{ task_id?: string }>>(`/self/vm/recycle/${id}/restore`)
+}
+
+/** 管理员：永久清除回收站虚拟机（入队任务，高风险需二次验证） */
+export function purgeVmRecycle(id: number) {
+  return service.post<unknown, ApiResponse<{ task_id?: string }>>(`/vm/recycle/${id}/purge`)
+}
+
+/** 用户自助：永久清除自己回收站中的虚拟机 */
+export function selfPurgeVmRecycle(id: number) {
+  return service.post<unknown, ApiResponse<{ task_id?: string }>>(`/self/vm/recycle/${id}/purge`)
 }
 
 /** 锁定虚拟机 */

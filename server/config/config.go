@@ -181,6 +181,8 @@ type Config struct {
 	ScheduledPasswordBreachCheckEnabled bool `json:"scheduled_password_breach_check_enabled"`
 	// 用户存储自动定时回收开关（默认开启，每天本地时间 02:00 执行 fstrim + fallocate --dig-holes）
 	ScheduledStorageTrimEnabled bool `json:"scheduled_storage_trim_enabled"`
+	// 回收站保留天数（默认 7；每天 03:00 自动清除到期记录；0 = 不自动清除）
+	VMRecycleRetentionDays int `json:"vm_recycle_retention_days"`
 	// 硬件直通开关（默认关闭，开启后启用 IOMMU 和 vfio-pci 支持）
 	HardwarePassthroughEnabled bool `json:"hardware_passthrough_enabled"`
 	// 安全组默认全放通开关（默认关闭，开启后新建安全组自动添加 IPv4/IPv6 全放通入站规则）
@@ -317,6 +319,7 @@ func Init() {
 		PasswordBreachCheckEnabled:           getEnvBool("KVM_PASSWORD_BREACH_CHECK_ENABLED", true),
 		ScheduledPasswordBreachCheckEnabled:  getEnvBool("KVM_SCHEDULED_PASSWORD_BREACH_CHECK_ENABLED", true),
 		ScheduledStorageTrimEnabled:          getEnvBool("KVM_SCHEDULED_STORAGE_TRIM_ENABLED", true),
+		VMRecycleRetentionDays:               getEnvInt("KVM_VM_RECYCLE_RETENTION_DAYS", 7),
 		HardwarePassthroughEnabled:           getEnvBool("KVM_HARDWARE_PASSTHROUGH_ENABLED", false),
 		SecurityGroupDefaultAllowAll:         getEnvBool("KVM_SECURITY_GROUP_DEFAULT_ALLOW_ALL", false),
 		CORSAllowedOrigins:                   getEnv("KVM_CORS_ALLOWED_ORIGINS", ""),
@@ -525,6 +528,7 @@ var PersistableKeys = []string{
 	"smtp_security",
 	"smtp_timeout_seconds",
 	"scheduler_event_retention_hours",
+	"vm_recycle_retention_days",
 	"port_forward_http_probe_enabled",
 	"port_forward_http_probe_interval_minutes",
 	"port_forward_http_probe_timeout_seconds",
@@ -609,6 +613,7 @@ var keyToEnvVar = map[string]string{
 	"smtp_security":                            "KVM_SMTP_SECURITY",
 	"smtp_timeout_seconds":                     "KVM_SMTP_TIMEOUT_SECONDS",
 	"scheduler_event_retention_hours":          "KVM_SCHEDULER_EVENT_RETENTION_HOURS",
+	"vm_recycle_retention_days":                "KVM_VM_RECYCLE_RETENTION_DAYS",
 	"port_forward_http_probe_enabled":          "KVM_PORT_FORWARD_HTTP_PROBE_ENABLED",
 	"port_forward_http_probe_interval_minutes": "KVM_PORT_FORWARD_HTTP_PROBE_INTERVAL_MINUTES",
 	"port_forward_http_probe_timeout_seconds":  "KVM_PORT_FORWARD_HTTP_PROBE_TIMEOUT_SECONDS",
@@ -768,6 +773,10 @@ func (c *Config) LoadFromDB(settings map[string]string) {
 		case "scheduler_event_retention_hours":
 			if v, err := strconv.Atoi(value); err == nil {
 				c.SchedulerEventRetentionHours = v
+			}
+		case "vm_recycle_retention_days":
+			if v, err := strconv.Atoi(value); err == nil && v >= 0 {
+				c.VMRecycleRetentionDays = v
 			}
 		case "vpc_subnet_prefix":
 			c.VPCSubnetPrefix = value
@@ -946,6 +955,7 @@ func (c *Config) ToSettingsMap() map[string]string {
 		"smtp_security":                            c.SMTPSecurity,
 		"smtp_timeout_seconds":                     strconv.Itoa(c.SMTPTimeoutSeconds),
 		"scheduler_event_retention_hours":          strconv.Itoa(c.SchedulerEventRetentionHours),
+		"vm_recycle_retention_days":                strconv.Itoa(c.VMRecycleRetentionDays),
 		"vpc_subnet_prefix":                        c.VPCSubnetPrefix,
 		"vpc_vlan_start":                           strconv.Itoa(c.VPCVLANStart),
 		"vpc_vlan_end":                             strconv.Itoa(c.VPCVLANEnd),
