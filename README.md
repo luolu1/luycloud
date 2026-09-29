@@ -1,5 +1,5 @@
 # luycloud - 开源虚拟机管理控制台
- https://sponsorship.forztn.com/github.com/luolu1/luycloud 
+
 
 <div align="center">
 
@@ -221,6 +221,7 @@ luycloud 会在检测到宿主机处于嵌套虚拟化环境（`/proc/cpuinfo` �
 ## 致谢
 
 感谢所有为 luycloud 做出贡献的开发者！
+感谢学长的赞助： https://sponsorship.forztn.com/github.com/luolu1/luycloud 
 
 ---
 
