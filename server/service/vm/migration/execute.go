@@ -21,6 +21,13 @@ var (
 	vmMigrationNVRAMTemplateFmt  = regexp.MustCompile(`\s+templateFormat=['"][^'"]+['"]`)
 	vmMigrationNVRAMFormatAttr   = regexp.MustCompile(`\s+format=['"][^'"]+['"]`)
 	vmMigrationNVRAMTag          = regexp.MustCompile(`(?s)<nvram\b[^>]*(?:/>|>.*?</nvram>)`)
+
+	// CDROM 光驱媒体处理：迁移时目标节点可能没有源节点的 ISO 文件（安装介质、virtio-win 等），
+	// 若目标 XML 仍保留 <source file='...iso'/>，libvirt 在 prepare 阶段会因无法打开该文件而失败
+	// （Cannot access storage file ... No such file or directory）。
+	vmMigrationCDROMDiskTag = regexp.MustCompile(`(?s)<disk\b[^>]*device=['"]cdrom['"][^>]*>.*?</disk>`)
+	vmMigrationSourceTag    = regexp.MustCompile(`(?s)\s*<source\b[^>]*(?:/>|>.*?</source>)`)
+	vmMigrationSourceFile   = regexp.MustCompile(`file=['"]([^'"]+)['"]`)
 )
 
 func maxInt(a, b int) int {
@@ -126,6 +133,9 @@ func executeColdMigration(ctx context.Context, node model.HostNode, preview *VMM
 		_, _ = service.RemoteSSHCommand(ctx, node, "chown libvirt-qemu:kvm "+utils.ShellSingleQuote(disk.TargetPath)+" || true", 30*time.Second)
 	}
 	progress(62, "正在复制并定义虚拟机 XML...")
+	// 弹出目标节点缺失的光驱 ISO 介质，避免目标 define/启动时无法打开存储文件
+	xmlText, cdromWarnings := ejectMissingCDROMMediaForTarget(node, xmlText)
+	preview.Warnings = append(preview.Warnings, cdromWarnings...)
 	targetXML := "/tmp/kvm-migrate-" + preview.VMName + ".xml"
 	if err := service.WriteRemoteFile(ctx, node, xmlText, targetXML, 30*time.Second); err != nil {
 		return err
@@ -187,6 +197,11 @@ func executeLiveMigration(ctx context.Context, node model.HostNode, preview *VMM
 		createdTargets = append(createdTargets, nvramPath)
 	}
 
+	// 弹出目标节点缺失的光驱 ISO 介质，避免 libvirt prepare 阶段无法打开存储文件而失败。
+	// 仅移除 <source>，保留光驱设备/地址，保持 live 迁移设备 ABI 兼容。
+	vmXML, cdromWarnings := ejectMissingCDROMMediaForTarget(node, vmXML)
+	preview.Warnings = append(preview.Warnings, cdromWarnings...)
+
 	progress(46, "正在执行热迁移...")
 	sshURI := fmt.Sprintf("qemu+ssh://%s@%s/system", node.SSHUser, node.SSHHost)
 	localXML := filepath.Join("/tmp", "kvm-migrate-"+preview.VMName+"-live.xml")
@@ -206,6 +221,43 @@ func executeLiveMigration(ctx context.Context, node model.HostNode, preview *VMM
 	}
 	cleanupTargets = false
 	return nil
+}
+
+// ejectMissingCDROMMediaForTarget 处理目标 XML 中的 CDROM 光驱媒体。
+//
+// 迁移只复制 device='disk' 的真实磁盘（--copy-storage-inc），CDROM 挂载的 ISO 介质
+// （安装盘、virtio-win 等）不会被复制。若目标 XML 仍保留 <source file='...iso'/> 而目标
+// 节点无该文件，libvirt 在 prepare 阶段会因无法打开存储文件而使整个迁移失败。
+//
+// 逐个光驱按介质路径在目标节点做存在性探测：
+//   - 目标同路径存在（共享 ISO 库）→ 保留 <source>，介质不复制；
+//   - 目标缺失 → 仅移除 <source>（弹出介质），保留光驱设备本身（<target>/<address>/<readonly/>
+//     等不动），从而保持 live 迁移的设备 ABI 兼容，且把该光驱移出 copy-storage 集合。
+//
+// 返回处理后的 XML 与告警信息（供 preview.Warnings 展示）。
+func ejectMissingCDROMMediaForTarget(node model.HostNode, xmlText string) (string, []string) {
+	var warnings []string
+	seen := map[string]bool{}
+	result := vmMigrationCDROMDiskTag.ReplaceAllStringFunc(xmlText, func(diskBlock string) string {
+		m := vmMigrationSourceFile.FindStringSubmatch(diskBlock)
+		if len(m) < 2 {
+			return diskBlock // 已是空光驱，无需处理
+		}
+		isoPath := strings.TrimSpace(m[1])
+		if isoPath == "" {
+			return diskBlock
+		}
+		if diskTargetExists(node, isoPath) {
+			return diskBlock // 目标同路径存在（共享库），保留介质，libvirt 视为共享盘不复制
+		}
+		if !seen[isoPath] {
+			seen[isoPath] = true
+			warnings = append(warnings, fmt.Sprintf("已弹出光驱 ISO 介质（目标节点缺少 %s），迁移后如需可重新挂载", isoPath))
+		}
+		// 仅移除 <source>，保留光驱设备与 <target>/<address>/<readonly/>，保持 ABI 兼容
+		return vmMigrationSourceTag.ReplaceAllString(diskBlock, "")
+	})
+	return result, warnings
 }
 
 func migrationURIHost(host string) string {
