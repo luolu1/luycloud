@@ -276,6 +276,7 @@ export default function InfoTab({
         </Row>
         <Row label="机器类型">{vm.machine_type || '-'}</Row>
         <Row label="模板来源">{vm.template || '-'}</Row>
+        <Row label="创建时间">{vm.created_at || '-'}</Row>
         <Row label="备注">
           <span className="qvm-remark-text">{vm.remark || '-'}</span>
           {!isLightweight && (
