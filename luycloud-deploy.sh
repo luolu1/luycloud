@@ -35,6 +35,17 @@ success() { echo -e "${GREEN}[✓]${NC} $1"; }
 APP_NAME="luycloud"
 GIT_REPO="${LUYCLOUD_GIT:-https://github.com/luolu1/luycloud.git}"
 GIT_BRANCH="${LUYCLOUD_BRANCH:-main}"
+
+# CDN / 代理前缀：国内 git clone GitHub 较慢时，可为 https://github.com 链接
+# 加代理前缀（如 https://ghfast.top），脚本会拼成 <前缀>/https://github.com/...。
+# 可用环境变量 LUYCLOUD_MIRROR 预置；留空表示直连。仅对 https 的 GitHub 地址生效。
+MIRROR_PREFIX="${LUYCLOUD_MIRROR:-}"
+BUILTIN_MIRRORS=(
+    "https://ghfast.top"
+    "https://gh-proxy.com"
+    "https://ghproxy.net"
+    "https://mirror.ghproxy.com"
+)
 # 源码检出目录（默认放在 /opt/luycloud-src，可用 LUYCLOUD_SRC 覆盖）
 SRC_DIR="${LUYCLOUD_SRC:-/opt/luycloud-src}"
 
@@ -110,6 +121,56 @@ fetch_url() {
     else
         wget -O "$out" "$url"
     fi
+}
+
+# apply_mirror URL —— 为 https 的 GitHub 地址拼接 CDN 代理前缀（其它地址原样返回）
+apply_mirror() {
+    local url="$1"
+    if [ -n "$MIRROR_PREFIX" ] && [[ "$url" == https://github.com/* || "$url" == https://raw.githubusercontent.com/* ]]; then
+        echo "${MIRROR_PREFIX%/}/${url}"
+    else
+        echo "$url"
+    fi
+}
+
+# ---------- CDN / 代理前缀配置（交互式，非交互沿用环境变量） ----------
+configure_mirror() {
+    if [ -n "$MIRROR_PREFIX" ]; then
+        info "使用环境变量指定的 CDN 代理前缀: ${MIRROR_PREFIX}"
+        return
+    fi
+    if [ ! -t 0 ]; then
+        return
+    fi
+    echo ""
+    echo -e "${CYAN}是否为 GitHub 克隆/下载配置 CDN 代理加速？（国内访问较慢时推荐）${NC}"
+    echo -e "  ${CYAN}0.${NC} 直连 GitHub（默认）"
+    local i=1
+    for m in "${BUILTIN_MIRRORS[@]}"; do
+        echo -e "  ${CYAN}${i}.${NC} ${m}"
+        i=$((i + 1))
+    done
+    echo -e "  ${CYAN}c.${NC} 自定义代理前缀"
+    echo ""
+    local choice
+    read -rp "请选择 [0-${#BUILTIN_MIRRORS[@]}/c，默认 0]: " choice
+    choice=${choice:-0}
+    case "$choice" in
+        0) MIRROR_PREFIX=""; info "将直连 GitHub" ;;
+        c|C)
+            read -rp "请输入代理前缀（形如 https://ghfast.top）: " MIRROR_PREFIX
+            MIRROR_PREFIX="$(echo "$MIRROR_PREFIX" | tr -d '[:space:]')"
+            [ -z "$MIRROR_PREFIX" ] && warn "未输入前缀，改为直连 GitHub" || info "使用自定义代理前缀: ${MIRROR_PREFIX}"
+            ;;
+        *)
+            if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#BUILTIN_MIRRORS[@]}" ]; then
+                MIRROR_PREFIX="${BUILTIN_MIRRORS[$((choice - 1))]}"
+                info "使用内置代理前缀: ${MIRROR_PREFIX}"
+            else
+                warn "无效选择，改为直连 GitHub"; MIRROR_PREFIX=""
+            fi
+            ;;
+    esac
 }
 
 # ---------- 包管理器封装（用于安装 git / go / node） ----------
@@ -284,19 +345,27 @@ ensure_node() {
 
 # ---------- 克隆 / 更新源码 ----------
 sync_source() {
+    local clone_repo
+    clone_repo="$(apply_mirror "$GIT_REPO")"
+    if [ "$clone_repo" != "$GIT_REPO" ]; then
+        info "通过 CDN 代理克隆: ${clone_repo}"
+    fi
     if [ -d "${SRC_DIR}/.git" ]; then
         info "更新已有源码: ${SRC_DIR}（分支 ${GIT_BRANCH}）"
-        git -C "$SRC_DIR" remote set-url origin "$GIT_REPO" 2>/dev/null || true
+        git -C "$SRC_DIR" remote set-url origin "$clone_repo" 2>/dev/null || true
         git -C "$SRC_DIR" fetch --depth 1 origin "$GIT_BRANCH"
         git -C "$SRC_DIR" checkout -B "$GIT_BRANCH" "origin/${GIT_BRANCH}"
         git -C "$SRC_DIR" reset --hard "origin/${GIT_BRANCH}"
+        # 还原为原始仓库地址，避免代理前缀被持久化到 origin
+        git -C "$SRC_DIR" remote set-url origin "$GIT_REPO" 2>/dev/null || true
     else
         if [ -e "$SRC_DIR" ] && [ -n "$(ls -A "$SRC_DIR" 2>/dev/null)" ]; then
             error "源码目录 ${SRC_DIR} 已存在且非 git 仓库，请清理后重试或设置 LUYCLOUD_SRC"
             exit 1
         fi
         info "克隆源码到 ${SRC_DIR}（分支 ${GIT_BRANCH}）..."
-        git clone --depth 1 --branch "$GIT_BRANCH" "$GIT_REPO" "$SRC_DIR"
+        git clone --depth 1 --branch "$GIT_BRANCH" "$clone_repo" "$SRC_DIR"
+        git -C "$SRC_DIR" remote set-url origin "$GIT_REPO" 2>/dev/null || true
     fi
     local head
     head=$(git -C "$SRC_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -338,6 +407,7 @@ build_release() {
 
 # ---------- 安装 / 更新：委托给产物内 install.sh ----------
 run_install() {
+    configure_mirror
     ensure_git
     ensure_go
     ensure_node

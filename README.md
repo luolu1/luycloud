@@ -61,7 +61,31 @@ bash <(wget -qO- https://raw.githubusercontent.com/luolu1/luycloud/main/luycloud
 - 🌐 访问地址：`http://<服务器IP>:8080`
 - 🔑 默认账号：`admin` / `admin123`（首次登录请立即修改）
 
-> 📌 直接克隆源码编译，始终与仓库 `main` 分支保持实时同步。可用环境变量覆盖行为：`LUYCLOUD_GIT`（仓库地址）、`LUYCLOUD_BRANCH`（分支）、`LUYCLOUD_SRC`（源码检出目录，默认 `/opt/luycloud-src`）、`LUYCLOUD_VARIANT`（`native` 原生版 / `compat` zig 兼容版，默认 `native`）、`GOPROXY`（国内加速）。
+> 📌 直接克隆源码编译，始终与仓库 `main` 分支保持实时同步。可用环境变量覆盖行为：`LUYCLOUD_GIT`（仓库地址）、`LUYCLOUD_BRANCH`（分支）、`LUYCLOUD_SRC`（源码检出目录，默认 `/opt/luycloud-src`）、`LUYCLOUD_VARIANT`（`native` 原生版 / `compat` zig 兼容版，默认 `native`）、`GOPROXY`（国内加速）、`LUYCLOUD_MIRROR`（GitHub CDN 代理前缀，如 `https://ghfast.top`）。
+
+### ⚡ 一键更新（已安装用户推荐）
+
+已安装用户升级到新版本（例如新增「回收站」功能）时，无需重新编译，直接拉取 GitHub Releases 的**预编译发行包**热替换二进制与前端并重启服务：
+
+```bash
+# 以 root 运行（二选一）
+bash <(curl -fsSL https://raw.githubusercontent.com/luolu1/luycloud/main/update.sh)
+bash <(wget -qO- https://raw.githubusercontent.com/luolu1/luycloud/main/update.sh)
+```
+
+- 🚀 秒级更新，无需 Go / Node 工具链；自动按 GLIBC / AVX2 选择原生版或兼容版二进制
+- 🛡️ 更新前自动备份旧版本，新版启动失败会自动回滚
+- 🌏 **CDN 加速**：国内访问 GitHub 较慢时，脚本提供内置代理镜像菜单，也可用环境变量指定：
+
+  ```bash
+  # 使用 CDN 代理前缀加速下载
+  LUYCLOUD_MIRROR="https://ghfast.top" bash <(curl -fsSL https://raw.githubusercontent.com/luolu1/luycloud/main/update.sh)
+
+  # 更新到指定版本（默认 latest）
+  LUYCLOUD_RELEASE_TAG="v1.1.0" bash update.sh
+  ```
+
+> 💡 `update.sh` 仅用于**更新**现有安装；首次安装请使用上方的 `luycloud-deploy.sh`。`luycloud-deploy.sh` 同样支持 `LUYCLOUD_MIRROR` 代理前缀为 `git clone` 提速。
 
 <details>
 <summary><b>方式二：使用发行包一键部署</b></summary>
