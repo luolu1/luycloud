@@ -1,12 +1,12 @@
 <div align="center">
 
-<img width="1280" height="625" alt="luycloud 管理界面预览" src="README-preview.jpg" />
+<img width="1280" height="625" alt="luycloud management interface preview" src="README-preview.jpg" />
 
 # ☁️ luycloud
 
-**开源 · 轻量 · 一体化的 KVM 虚拟机管理控制台**
+**Open-source, lightweight, all-in-one KVM virtual machine management console**
 
-基于 KVM/QEMU 深度集成，覆盖虚拟机生命周期、网络与存储编排、快照克隆、防火墙与带宽治理的私有云平台。
+An integrated private cloud platform built around KVM/QEMU, covering virtual machine lifecycles, network and storage orchestration, snapshot cloning, firewall management, and bandwidth governance.
 
 <br/>
 
@@ -18,37 +18,37 @@
 
 <br/>
 
-[**🚀 快速部署**](#-快速部署) · [**✨ 核心功能**](#-核心功能) · [**🧰 技术栈**](#-技术栈) · [**🤝 贡献指南**](#-开发贡献指南) · [**💬 问题反馈**](https://github.com/luolu1/luycloud/issues)
+[**🚀 Quick Deployment**](#-quick-deployment) · [**✨ Core Features**](#-core-features) · [**🧰 Technology Stack**](#-technology-stack) · [**🤝 Contribution Guide**](#-contribution-guide) · [**💬 Report an Issue**](https://github.com/luolu1/luycloud/issues)
 
 </div>
 
 ---
 
-## 📖 项目简介
+## 📖 Overview
 
-luycloud 是一个面向小型企业和个人私有云服务场景的开源虚拟机管理平台，基于 KVM/QEMU 虚拟化技术深度集成，提供从虚拟机生命周期管理、网络与存储编排、快照与克隆、防火墙与带宽治理，到 Web 控制台与 API 一体化交付的完整解决方案。
+luycloud is an open-source virtual machine management platform for small businesses and personal private cloud deployments. It deeply integrates KVM/QEMU virtualization and provides a complete solution spanning virtual machine lifecycle management, network and storage orchestration, snapshots and cloning, firewall and bandwidth governance, and an integrated Web console and API.
 
-> 💡 luycloud 基于 QVMConsole 二次开发，去除了原版的部分限制，采用独立的品牌与部署方案，便于自由扩展与私有化部署。
+> 💡 luycloud is derived from QVMConsole, removes some of the original limitations, and uses an independent brand and deployment model for flexible extension and private deployment.
 
-### 核心价值
+### Core Value
 
-| | 价值点 | 说明 |
+| | Value | Description |
 |:---:|:---|:---|
-| 🎯 | **降低运维门槛** | 提供"即开即用"的虚拟化管理平台，减少重复造轮子的成本 |
-| ⚡ | **模板即点即用** | 预制 Linux/Windows/OpenWrt 等常用系统模板，无需了解 KVM 底层命令，只需填几个表单字段即可在数分钟内完成虚拟机创建；系统自动处理磁盘格式、引导类型、网络配置等复杂细节 |
-| 🧩 | **模块化设计** | 可插拔网络后端（如 Open vSwitch），适配多样化的网络拓扑与安全策略 |
-| 🔀 | **双入口架构** | Web 控制台与 RESTful API 兼顾自动化与人工运维效率 |
-| 📊 | **可观测性** | 任务队列与 SSE 机制实现长耗时操作的可观测与可中断，保障大规模并发下的稳定性 |
+| 🎯 | **Lower the operations barrier** | Provides a ready-to-use virtualization management platform and reduces the cost of reinventing the wheel |
+| ⚡ | **Click-to-use templates** | Includes common Linux/Windows/OpenWrt system templates; create a VM in minutes by filling out a few fields without knowing low-level KVM commands. The system handles disk formats, boot types, network configuration, and other details automatically |
+| 🧩 | **Modular design** | Pluggable network backends such as Open vSwitch support diverse network topologies and security policies |
+| 🔀 | **Dual entry points** | The Web console and RESTful API support both automation and efficient manual operations |
+| 📊 | **Observability** | Task queues and SSE make long-running operations observable and interruptible, improving stability under high concurrency |
 
 ---
 
-## 🚀 快速部署
+## 🚀 Quick Deployment
 
-luycloud 提供一键安装脚本，自动完成依赖安装（libvirt / qemu-kvm / Open vSwitch 等）、用户存储、systemd 服务注册与启动。
+luycloud provides a one-click installation script that automatically installs dependencies (libvirt / qemu-kvm / Open vSwitch, etc.), configures user storage, and registers and starts the systemd service.
 
-### 方式一：一键远程部署（推荐）
+### Option 1: One-click Remote Deployment (Recommended)
 
-无需手动下载源码，脚本会自动克隆最新源码、准备 Go/Node 工具链、本地编译并进入交互式安装：
+No manual source download is required. The script clones the latest source, prepares the Go/Node toolchains, builds locally, and starts the interactive installation:
 
 ```bash
 # 以 root 运行（二选一）
@@ -56,16 +56,16 @@ bash <(curl -fsSL https://raw.githubusercontent.com/luolu1/luycloud/main/luyclou
 bash <(wget -qO- https://raw.githubusercontent.com/luolu1/luycloud/main/luycloud-deploy.sh)
 ```
 
-引导脚本会依次执行：CPU 架构检测 → 检测/自动安装 git、Go、Node.js 工具链 → 克隆或更新 `main` 分支源码 → `build.sh` 本地编译前端 + 后端 → 调用 `install.sh` 完成交互式安装。已安装时脚本自动切换为「更新 / 卸载」菜单。
+The bootstrap script performs these steps: detect the CPU architecture → detect/install the git, Go, and Node.js toolchains → clone or update the `main` branch → locally build the frontend and backend with `build.sh` → call `install.sh` for interactive installation. When already installed, the script switches to an “Update / Uninstall” menu.
 
-- 🌐 访问地址：`http://<服务器IP>:8080`
-- 🔑 默认账号：`admin` / `admin123`（首次登录请立即修改）
+- 🌐 Access URL: `http://<server-IP>:8080`
+- 🔑 Default account: `admin` / `admin123` (change it immediately after the first login)
 
-> 📌 直接克隆源码编译，始终与仓库 `main` 分支保持实时同步。可用环境变量覆盖行为：`LUYCLOUD_GIT`（仓库地址）、`LUYCLOUD_BRANCH`（分支）、`LUYCLOUD_SRC`（源码检出目录，默认 `/opt/luycloud-src`）、`LUYCLOUD_VARIANT`（`native` 原生版 / `compat` zig 兼容版，默认 `native`）、`GOPROXY`（国内加速）、`LUYCLOUD_MIRROR`（GitHub CDN 代理前缀，如 `https://ghfast.top`）。
+> 📌 The source is cloned and built directly, keeping it synchronized with the repository’s `main` branch. Override behavior with these environment variables: `LUYCLOUD_GIT` (repository URL), `LUYCLOUD_BRANCH` (branch), `LUYCLOUD_SRC` (source checkout directory, default `/opt/luycloud-src`), `LUYCLOUD_VARIANT` (`native` native build / `compat` zig-compatible build, default `native`), `GOPROXY` (China acceleration), and `LUYCLOUD_MIRROR` (GitHub CDN proxy prefix, such as `https://ghfast.top`).
 
-### ⚡ 一键更新（已安装用户推荐）
+### ⚡ One-click Update (Recommended for Existing Installations)
 
-已安装用户升级到新版本（例如新增「回收站」功能）时，无需重新编译，直接拉取 GitHub Releases 的**预编译发行包**热替换二进制与前端并重启服务：
+When upgrading an existing installation to a new version (for example, one adding a “Recycle Bin” feature), there is no need to rebuild. The script downloads the **precompiled release package** from GitHub Releases, hot-swaps the binary and frontend, and restarts the service:
 
 ```bash
 # 以 root 运行（二选一）
@@ -73,226 +73,226 @@ bash <(curl -fsSL https://raw.githubusercontent.com/luolu1/luycloud/main/update.
 bash <(wget -qO- https://raw.githubusercontent.com/luolu1/luycloud/main/update.sh)
 ```
 
-- 🚀 秒级更新，无需 Go / Node 工具链；自动按 GLIBC / AVX2 选择原生版或兼容版二进制
-- 🛡️ 更新前自动备份旧版本，新版启动失败会自动回滚
-- 🌏 **CDN 加速**：国内访问 GitHub 较慢时，脚本提供内置代理镜像菜单，也可用环境变量指定：
+- 🚀 Updates in seconds without Go / Node toolchains; automatically selects the native or compatible binary based on GLIBC / AVX2
+- 🛡️ Automatically backs up the old version before updating and rolls back if the new version fails to start
+- 🌏 **CDN acceleration**: when GitHub access is slow in China, the script provides a built-in proxy mirror menu and also supports an environment variable:
 
   ```bash
-  # 使用 CDN 代理前缀加速下载
+   # Use a CDN proxy prefix to accelerate downloads
   LUYCLOUD_MIRROR="https://ghfast.top" bash <(curl -fsSL https://raw.githubusercontent.com/luolu1/luycloud/main/update.sh)
 
-  # 更新到指定版本（默认 latest）
+   # Update to a specified version (latest by default)
   LUYCLOUD_RELEASE_TAG="v1.1.0" bash update.sh
   ```
 
-> 💡 `update.sh` 仅用于**更新**现有安装；首次安装请使用上方的 `luycloud-deploy.sh`。`luycloud-deploy.sh` 同样支持 `LUYCLOUD_MIRROR` 代理前缀为 `git clone` 提速。
+> 💡 `update.sh` is only for **updating** an existing installation; use `luycloud-deploy.sh` above for the first installation. `luycloud-deploy.sh` also supports the `LUYCLOUD_MIRROR` proxy prefix to speed up `git clone`.
 
 <details>
-<summary><b>方式二：使用发行包一键部署</b></summary>
+<summary><b>Option 2: One-click Deployment from a Release Package</b></summary>
 
 <br/>
 
-若已有构建好的发行包：
+If you already have a built release package:
 
 ```bash
-# 1. 下载并解压发行包（amd64 / arm64）
+# 1. Download and extract the release package (amd64 / arm64)
 tar -xzf luycloud-linux-amd64.tar.gz
 cd luycloud-linux-amd64
 
-# 2. 以 root 运行一键安装脚本
+# 2. Run the one-click installation script as root
 sudo bash install.sh
 ```
 
-脚本会依次执行：硬件虚拟化检测 → 依赖安装 → 用户存储初始化 → 网络地基（OVS/DHCP/转发）→ systemd 服务注册 → 启动服务。安装完成后终端会打印访问地址。
+The script performs these steps: hardware virtualization detection → dependency installation → user storage initialization → network foundation (OVS/DHCP/forwarding) → systemd service registration → service startup. The terminal prints the access URL after installation.
 
-> 安装脚本为交互式，可按提示选择存储磁盘、容量、Web 端口、是否开启公网访问、是否运行兼容性实机测试。
+> The installation script is interactive. Follow the prompts to select the storage disk, capacity, Web port, whether to enable public access, and whether to run the compatibility hardware test.
 
 </details>
 
 <details>
-<summary><b>方式三：从源码手动构建</b></summary>
+<summary><b>Option 3: Build Manually from Source</b></summary>
 
 <br/>
 
-需要 Go 1.27+ 与 Node.js 22+（Vite 8 / rolldown 要求 Node ≥ 20.19）。
+Requires Go 1.27+ and Node.js 22+ (Vite 8 / rolldown requires Node ≥ 20.19).
 
 ```bash
-# 构建前端 + 后端并生成发行包
-bash build.sh --variant native      # 使用宿主机原生编译
-# 或
-bash build.sh                       # 同时构建 zig 兼容版（需安装 zig）
+# Build the frontend and backend and generate a release package
+bash build.sh --variant native      # Use native compilation on the host
+# or
+bash build.sh                       # Also build the zig-compatible version (zig required)
 
-# 产物位于 release/luycloud-linux-<arch>.tar.gz
-# 解压后 sudo bash install.sh 即可部署
+# Artifact: release/luycloud-linux-<arch>.tar.gz
+# Extract it, then run sudo bash install.sh to deploy
 ```
 
-国内网络构建提示：Go 依赖可设 `GOPROXY=https://goproxy.cn,direct`；前端依赖需 Node ≥ 20.19 以正确安装 rolldown 原生绑定。
+Build tip for networks in China: set `GOPROXY=https://goproxy.cn,direct` for Go dependencies; frontend dependencies require Node ≥ 20.19 to install rolldown native bindings correctly.
 
 </details>
 
-### 开发模式
+### Development Mode
 
 ```bash
 bash start-dev.sh
-# 后端 air 热重载 (:8080)，前端 vite (:5173)
+# Backend air hot reload (:8080), frontend Vite (:5173)
 ```
 
-### 常用运维命令
+### Common Operations Commands
 
 ```bash
-systemctl status kvm-console      # 查看服务状态
-journalctl -u kvm-console -f      # 查看实时日志
-systemctl restart kvm-console     # 重启服务
-sudo bash qvmc-manage.sh          # 账户与安全管理（重置密码、清除 2FA、改端口、公网开关等）
+systemctl status kvm-console      # View service status
+journalctl -u kvm-console -f      # View live logs
+systemctl restart kvm-console     # Restart the service
+sudo bash qvmc-manage.sh          # Account and security management (reset passwords, clear 2FA, change ports, public access, etc.)
 ```
 
 <details>
-<summary><b>⚙️ 嵌套虚拟化环境部署说明</b></summary>
+<summary><b>⚙️ Nested Virtualization Deployment Notes</b></summary>
 
 <br/>
 
-当宿主机本身运行在虚拟机中（嵌套 KVM）时，`host-passthrough` 会让 QEMU 尝试设置 `MSR 0x345 (IA32_PERF_CAPABILITIES)` 而崩溃：
+When the host itself runs inside a virtual machine (nested KVM), `host-passthrough` can make QEMU attempt to set `MSR 0x345 (IA32_PERF_CAPABILITIES)` and crash:
 
 ```
 qemu-system-x86_64: error: failed to set MSR 0x345 to 0x2000
 kvm_buf_set_msrs: Assertion `ret == cpu->kvm_msr_buf->nmsrs' failed.
 ```
 
-luycloud 会在检测到宿主机处于嵌套虚拟化环境（`/proc/cpuinfo` 含 `hypervisor` 标志）时，自动向虚拟机 domain XML 注入 `<pmu state='off'/>` 关闭 vPMU 规避该崩溃；此改动在裸金属宿主机上为无操作，不影响正常性能计数器功能。
+luycloud automatically injects `<pmu state='off'/>` into the VM domain XML when it detects nested virtualization (the `/proc/cpuinfo` `hypervisor` flag), disabling vPMU to avoid this crash. This is a no-op on bare-metal hosts and does not affect normal performance counter functionality.
 
 </details>
 
 ---
 
-## ✨ 核心功能
+## ✨ Core Features
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-### 🖥️ 虚拟机生命周期管理
-- 完整的电源操作（开机/关机/重启/强制断电/重置）
-- 配额控制与权限校验
-- 维护模式与优雅关机
+### 🖥️ Virtual Machine Lifecycle Management
+- Complete power operations (start/shut down/restart/force power off/reset)
+- Quota controls and permission checks
+- Maintenance mode and graceful shutdown
 
-### 🌐 网络虚拟化
-- VPC 逻辑交换机与安全组
-- 端口转发与静态 IP 管理
-- 防火墙策略（VM/宿主机双层）
-- 网络诊断与抓包工具
+### 🌐 Network Virtualization
+- VPC logical switches and security groups
+- Port forwarding and static IP management
+- Firewall policies (VM/host dual layer)
+- Network diagnostics and packet capture tools
 
-### 💾 存储管理
-- 宿主机存储池管理（格式化/分区/LVM 卷）
-- 模板管理（制作/导入/导出/删除）
-- 磁盘管理与 IOPS 限制
-- 用户 ISO 挂载
+### 💾 Storage Management
+- Host storage pool management (formatting/partitioning/LVM volumes)
+- Template management (create/import/export/delete)
+- Disk management and IOPS limits
+- User ISO mounting
 
 </td>
 <td width="50%" valign="top">
 
-### 👥 用户权限与配额
-- 多租户支持（弹性云/轻量云）
-- 细粒度配额管理（CPU/内存/磁盘/VM 数/存储/带宽/流量/公网 IP/端口转发/快照）
-- SSH 访问控制与邀请注册流程
+### 👥 User Permissions and Quotas
+- Multi-tenant support (elastic cloud/lightweight cloud)
+- Fine-grained quota management (CPU/memory/disk/VM count/storage/bandwidth/traffic/public IP/port forwarding/snapshots)
+- SSH access control and invitation registration flow
 
-### 📈 监控与任务调度
-- VM/宿主机统计与历史数据
-- 异步任务队列与 SSE 实时推送
-- 定时事件中心与资源回收
+### 📈 Monitoring and Task Scheduling
+- VM/host statistics and historical data
+- Asynchronous task queue and real-time SSE updates
+- Scheduled event center and resource cleanup
 
-### 📸 快照备份
-- 创建/恢复/删除/批量删除快照
-- NVRAM 与共享目录兼容性检查
-- 配额校验与任务跟踪
+### 📸 Snapshot Backups
+- Create/restore/delete/bulk-delete snapshots
+- NVRAM and shared directory compatibility checks
+- Quota validation and task tracking
 
 </td>
 </tr>
 </table>
 
 <details>
-<summary><b>🧬 模板创建虚拟机（点击展开详情）</b></summary>
+<summary><b>🧬 Create VMs from Templates (Click to Expand)</b></summary>
 
 <br/>
 
-- **模板管理**：支持从运行中虚拟机一键制作模板、导入/导出模板包（tar.gz）、预览导入完整性校验
-- **多类型模板支持**：Linux（cloud-init）、Windows（ConfigDrive）、OpenWrt（UCI 配置注入）、FnOS（virt-customize）及"不初始化"模式
-- **统一克隆架构**：支持完整克隆与链式克隆两种模式，完整克隆产生独立磁盘镜像，链式克隆基于 backing chain 实现快速部署
-- **系统初始化控制**：可禁用系统初始化，保持模板原始系统配置；支持阻塞式/非阻塞式启动后命令执行
-- **智能引导检测**：自动检测 UEFI/BIOS 引导类型，复制 NVRAM 路径，确保跨架构兼容性
-- **OpenWrt 双模式初始化**：自动检测 ext4 根分区和 squashfs+overlay 两种磁盘布局，智能选择 virt-customize 或 guestfish 注入网络配置
-- **Windows ConfigDrive**：符合 OpenStack 标准的 ISO 镜像，通过 cloudbase-init 自动完成主机名、密码等初始化配置
-- **元数据驱动**：模板类型、分类、默认硬件配置、哈希校验、模板族关系等均由 `.meta.json` 元数据文件管理
-- **版本与完整性校验**：MD5 + SHA256 双重哈希校验，确保模板磁盘完整性
-- **模板族管理**：支持模板父子关系、节点树、级联删除、静默提升与热提升操作
+- **Template management**: Create templates from running VMs with one click, import/export template packages (tar.gz), and preview import integrity checks
+- **Multiple template types**: Linux (cloud-init), Windows (ConfigDrive), OpenWrt (UCI configuration injection), FnOS (virt-customize), and a “do not initialize” mode
+- **Unified cloning architecture**: Supports full and linked cloning. Full clones create independent disk images, while linked clones use a backing chain for rapid deployment
+- **System initialization control**: Disable system initialization to preserve the template’s original configuration; supports blocking and non-blocking post-start commands
+- **Smart boot detection**: Automatically detects UEFI/BIOS boot type and copies the NVRAM path to ensure cross-architecture compatibility
+- **OpenWrt dual-mode initialization**: Automatically detects ext4 root partitions and squashfs+overlay disk layouts, then intelligently selects virt-customize or guestfish to inject network configuration
+- **Windows ConfigDrive**: An OpenStack-compliant ISO image that uses cloudbase-init to initialize the hostname, password, and other settings automatically
+- **Metadata-driven**: Template type, category, default hardware configuration, hash verification, template family relationships, and more are managed by `.meta.json` metadata files
+- **Version and integrity checks**: Dual MD5 + SHA256 hash verification ensures template disk integrity
+- **Template family management**: Supports parent-child relationships, node trees, cascading deletion, silent promotion, and hot promotion
 
 </details>
 
 ---
 
-## 🧰 技术栈
+## 🧰 Technology Stack
 
 <table>
 <tr>
 <td valign="top" width="50%">
 
-**后端**
+**Backend**
 
-| 组件 | 选型 |
+| Component | Selection |
 |:---|:---|
-| 语言 | Go 1.27+ |
-| Web 框架 | Gin v1.12.0 |
-| 数据库 | SQLite + GORM v1.31.1 |
-| 虚拟化 | go-libvirt RPC |
-| 认证 | JWT v5.3.1 + TOTP v1.5.0 + crypto |
+| Language | Go 1.27+ |
+| Web framework | Gin v1.12.0 |
+| Database | SQLite + GORM v1.31.1 |
+| Virtualization | go-libvirt RPC |
+| Authentication | JWT v5.3.1 + TOTP v1.5.0 + crypto |
 | WebSocket | gorilla/websocket v1.5.3 |
-| 日志 | lumberjack v2.2.1 |
+| Logging | lumberjack v2.2.1 |
 
 </td>
 <td valign="top" width="50%">
 
-**前端**
+**Frontend**
 
-| 组件 | 选型 |
+| Component | Selection |
 |:---|:---|
-| UI 框架 | React v19.2.7 + TypeScript v6.0.2 |
-| 组件库 | Semi Design v2.101.1 |
-| 构建工具 | Vite v8.1.1 |
-| 路由 | react-router-dom v7.18.1 |
-| 状态管理 | Zustand v5.0.14 |
-| HTTP 客户端 | Axios v1.18.1 |
-| 图表 / 终端 / VNC | ECharts v6.1.0 · @xterm/xterm v6.0.0 · @novnc/novnc v1.7.0 |
+| UI framework | React v19.2.7 + TypeScript v6.0.2 |
+| Component library | Semi Design v2.101.1 |
+| Build tool | Vite v8.1.1 |
+| Routing | react-router-dom v7.18.1 |
+| State management | Zustand v5.0.14 |
+| HTTP client | Axios v1.18.1 |
+| Charts / terminal / VNC | ECharts v6.1.0 · @xterm/xterm v6.0.0 · @novnc/novnc v1.7.0 |
 
 </td>
 </tr>
 </table>
 
-> 旧版前端（备份）：Vue 3.5.30 + Element Plus，位于 `web-backup/`。
+> Legacy frontend (backup): Vue 3.5.30 + Element Plus, located in `web-backup/`.
 
-**虚拟化基础设施**：KVM/QEMU · Open vSwitch · Windows 初始化（ConfigDrive 标准支持）
+**Virtualization infrastructure**: KVM/QEMU · Open vSwitch · Windows initialization (ConfigDrive standard support)
 
 ---
 
-## 📋 系统要求
+## 📋 System Requirements
 
 <table>
 <tr>
 <td valign="top" width="50%">
 
-**硬件要求**
+**Hardware Requirements**
 
-- ✅ 支持 VT-x/AMD-V 的 CPU
-- 🧠 至少 4GB RAM（推荐 8GB+）
-- 💽 至少 50GB 可用磁盘空间
+- ✅ CPU with VT-x/AMD-V support
+- 🧠 At least 4GB RAM (8GB+ recommended)
+- 💽 At least 50GB of available disk space
 
 </td>
 <td valign="top" width="50%">
 
-**软件要求**
+**Software Requirements**
 
-- 🐧 操作系统：Debian/Ubuntu（推荐 Debian 12+）
-- 🖧 虚拟化：KVM/QEMU
-- 🌉 网络：Open vSwitch
-- 🛠️ 依赖工具：genisoimage（用于 Windows 虚拟机初始化）
+- 🐧 Operating system: Debian/Ubuntu (Debian 12+ recommended)
+- 🖧 Virtualization: KVM/QEMU
+- 🌉 Networking: Open vSwitch
+- 🛠️ Dependency tool: genisoimage (for Windows VM initialization)
 
 </td>
 </tr>
@@ -300,45 +300,45 @@ luycloud 会在检测到宿主机处于嵌套虚拟化环境（`/proc/cpuinfo` �
 
 ---
 
-## 🤝 开发贡献指南
+## 🤝 Contribution Guide
 
-作为一个由独立开发者维护的大型开源项目，luycloud 需要社区贡献者的支持才能持续完善。我们欢迎并鼓励您使用 AI 等工具进行功能修复与开发，但请务必遵守以下准则：
+As a large open-source project maintained by an independent developer, luycloud needs community support to continue improving. We welcome and encourage the use of AI and other tools for fixes and development, but please follow these guidelines:
 
-1. **规则遵守**：在使用 AI 工具时，必须将根目录的 `AGENTS.md` 文件作为核心提示词规则
-2. **场景通用性**：提交的功能应面向通用化使用场景，符合广大用户的需求。针对特定场景的定制功能建议自行 fork 仓库维护
+1. **Follow the rules**: When using AI tools, the `AGENTS.md` file in the repository root must be used as the core prompt rules
+2. **General-purpose scenarios**: Submitted features should target general use cases and meet the needs of a broad user base. For scenario-specific customizations, fork the repository and maintain them independently
 
-### 🔒 安全漏洞报告
+### 🔒 Security Vulnerability Reports
 
-如果您发现项目存在安全漏洞，无论严重程度如何，请勿在 GitHub Issues 中公开报告，以避免安全风险被恶意利用。请通过仓库私有渠道联系维护者进行安全披露：[提交私密安全反馈](https://github.com/luolu1/luycloud/security)。
-
----
-
-## 🔄 合并上游修改
-
-当标准仓库后端有修改时，请参阅 [`docs/merge-from-upstream.md`](docs/merge-from-upstream.md) 获取详细合并指南。
-
-**核心原则：**
-
-1. 只合并 `server/` 目录的后端修改
-2. 拒绝合并 `web/` 目录的任何前端修改
-3. 本仓库的 `web-backup/`、`.gitignore`、`docs/` 中的独有内容不会被上游覆盖
+If you discover a security vulnerability in the project, regardless of severity, do not report it publicly in GitHub Issues, to prevent malicious exploitation. Contact the maintainer through the repository’s private channel for responsible disclosure: [Submit private security feedback](https://github.com/luolu1/luycloud/security).
 
 ---
 
-## 💖 致谢
+## 🔄 Merging Upstream Changes
 
-感谢所有为 luycloud 做出贡献的开发者！
+When the standard repository backend changes, see [`docs/merge-from-upstream.md`](docs/merge-from-upstream.md) for detailed merge instructions.
 
-特别感谢由 [**ForZTN**](https://sponsorship.forztn.com/github.com/luolu1/luycloud) 赞助测试机器
+**Core principles:**
+
+1. Merge only backend changes in the `server/` directory
+2. Reject all frontend changes in the `web/` directory
+3. Unique content in this repository’s `web-backup/`, `.gitignore`, and `docs/` will not be overwritten by upstream
+
+---
+
+## 💖 Acknowledgements
+
+Thanks to all developers who have contributed to luycloud!
+
+Special thanks to [**ForZTN**](https://sponsorship.forztn.com/github.com/luolu1/luycloud) for sponsoring the test machine
 
 ---
 
 <div align="center">
 
-**☁️ luycloud** — 让虚拟化管理更简单
+**☁️ luycloud** — Making virtualization management simpler
 
-[官方网站](https://github.com/luolu1/luycloud) · [文档站点](https://github.com/luolu1/luycloud) · [部署指南](https://github.com/luolu1/luycloud)
+[Official Website](https://github.com/luolu1/luycloud) · [Documentation](https://github.com/luolu1/luycloud) · [Deployment Guide](https://github.com/luolu1/luycloud)
 
-<sub>如果这个项目对你有帮助，欢迎点一个 ⭐ Star 支持！</sub>
+<sub>If this project helps you, please support it with a ⭐ Star!</sub>
 
 </div>
