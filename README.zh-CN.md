@@ -18,6 +18,8 @@
 
 <br/>
 
+[English](README.md) · 简体中文 · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md)
+
 [**🚀 快速部署**](#-快速部署) · [**✨ 核心功能**](#-核心功能) · [**🧰 技术栈**](#-技术栈) · [**🤝 贡献指南**](#-开发贡献指南) · [**💬 问题反馈**](https://github.com/luolu1/luycloud/issues)
 
 </div>

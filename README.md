@@ -18,6 +18,8 @@ An integrated private cloud platform built around KVM/QEMU, covering virtual mac
 
 <br/>
 
+[English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md)
+
 [**🚀 Quick Deployment**](#-quick-deployment) · [**✨ Core Features**](#-core-features) · [**🧰 Technology Stack**](#-technology-stack) · [**🤝 Contribution Guide**](#-contribution-guide) · [**💬 Report an Issue**](https://github.com/luolu1/luycloud/issues)
 
 </div>
@@ -51,7 +53,7 @@ luycloud provides a one-click installation script that automatically installs de
 No manual source download is required. The script clones the latest source, prepares the Go/Node toolchains, builds locally, and starts the interactive installation:
 
 ```bash
-# 以 root 运行（二选一）
+# Run as root (choose one)
 bash <(curl -fsSL https://raw.githubusercontent.com/luolu1/luycloud/main/luycloud-deploy.sh)
 bash <(wget -qO- https://raw.githubusercontent.com/luolu1/luycloud/main/luycloud-deploy.sh)
 ```
@@ -68,7 +70,7 @@ The bootstrap script performs these steps: detect the CPU architecture → detec
 When upgrading an existing installation to a new version (for example, one adding a “Recycle Bin” feature), there is no need to rebuild. The script downloads the **precompiled release package** from GitHub Releases, hot-swaps the binary and frontend, and restarts the service:
 
 ```bash
-# 以 root 运行（二选一）
+# Run as root (choose one)
 bash <(curl -fsSL https://raw.githubusercontent.com/luolu1/luycloud/main/update.sh)
 bash <(wget -qO- https://raw.githubusercontent.com/luolu1/luycloud/main/update.sh)
 ```
