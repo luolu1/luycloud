@@ -329,7 +329,7 @@ luycloud 会在检测到宿主机处于嵌套虚拟化环境（`/proc/cpuinfo` �
 
 感谢所有为 luycloud 做出贡献的开发者！
 
-特别感谢学长赞助测试机器 —— [**点此访问学长的频道 →**](https://sponsorship.forztn.com/github.com/luolu1/luycloud)
+特别感谢由 [**ForZTN**](https://sponsorship.forztn.com/github.com/luolu1/luycloud) 赞助测试机器
 
 ---
 
