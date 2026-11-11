@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"kvm_console/config"
@@ -163,6 +164,9 @@ func BuildOVSInterfaceXMLWithVLAN(mac, model string, vlanID int) string {
 	return updated
 }
 
+// ovsDNSMasqStartMu 串行化 OVS dnsmasq 的检测与启动，避免并发调用互相 kill 刚启动的进程并触发 systemd start-limit。
+var ovsDNSMasqStartMu sync.Mutex
+
 // EnsureOVSNetworkReady verifies and prepares the OVS network environment.
 func EnsureOVSNetworkReady() error {
 	if !UseOVSNetwork() {
@@ -231,6 +235,8 @@ func EnsureOVSNetworkReady() error {
 		utils.ExecCommand("systemctl", "daemon-reload")
 	}
 	EnsureSystemdUnitEnabled(OVSDNSMasqUnit)
+	ovsDNSMasqStartMu.Lock()
+	defer ovsDNSMasqStartMu.Unlock()
 	if IsSystemdUnitFailed(OVSDNSMasqUnit) || !IsSystemdUnitActive(OVSDNSMasqUnit) {
 		// 启动前释放端口：仅杀占用 gatewayIP:53 的特定 PID，避免误杀 OVS dnsmasq
 		gatewayIP := OvsGatewayIP()
@@ -240,9 +246,15 @@ func EnsureOVSNetworkReady() error {
 			if pid == "" {
 				break
 			}
+			// 端口由本服务自身的 dnsmasq 占用（可能仍处于 activating）时不能杀
+			if cmdline, err := os.ReadFile("/proc/" + pid + "/cmdline"); err == nil && bytes.Contains(cmdline, []byte(OVSDNSMasqConf)) {
+				break
+			}
 			utils.ExecShellQuiet(fmt.Sprintf("kill %s 2>/dev/null || true", pid))
 			time.Sleep(500 * time.Millisecond)
 		}
+		// 清除失败状态与启动频率计数，避免 start-limit-hit
+		utils.ExecCommandQuiet("systemctl", "reset-failed", OVSDNSMasqUnit)
 		if result := utils.ExecCommand("systemctl", "start", OVSDNSMasqUnit); result.Error != nil {
 			return fmt.Errorf("启动 OVS DHCP 服务失败: %s", result.Stderr)
 		}

@@ -615,14 +615,11 @@ func CanSkipHighRiskVerification(user *model.User) bool {
 	if user.HighRiskVerifiedUntil != nil && time.Now().Before(*user.HighRiskVerifiedUntil) {
 		return true
 	}
-	// 管理员跳过了安全初始化
-	if user.BootstrapSkipped {
-		// 但如果 SMTP 已配置且邮箱已验证，说明可以正常发送验证码，
-		// 此时应恢复邮箱验证，不再跳过
+	// 管理员：如果 SMTP 已配置且邮箱已验证，允许邮箱验证；否则跳过
+	if user.Role == "admin" {
 		if IsSMTPConfigured() && user.EmailVerifiedAt != nil {
 			return false
 		}
-		// SMTP 未配置或邮箱未验证时，继续跳过
 		return true
 	}
 	return false
@@ -637,14 +634,8 @@ func CanEnterBootstrap(user *model.User) bool {
 		return false
 	}
 	if user.Role == "admin" {
-		if D.IsPublicAccessEnabled() {
-			return !IsSMTPConfigured() || user.EmailVerifiedAt == nil || !user.TOTPEnabled
-		}
-		// 管理员如果已跳过安全初始化，不再进入引导
-		if user.BootstrapSkipped {
-			return false
-		}
-		return !IsSMTPConfigured() || user.EmailVerifiedAt == nil || !user.TOTPEnabled
+		// 管理员不强制安全引导，可自行选择是否配置 SMTP/邮箱/2FA
+		return false
 	}
 	// 普通用户邮箱为选填。没有邮箱时可以直接登录，后续仍可在安全设置中绑定。
 	return strings.TrimSpace(user.Email) != "" && user.EmailVerifiedAt == nil
@@ -795,15 +786,12 @@ func NeedsLoginVerification(user *model.User) bool {
 		return false
 	}
 	if user.Role == "admin" {
-		// 已绑定 2FA 的管理员必须完成登录验证（即使曾跳过安全初始化）
+		// 已绑定 2FA 的管理员必须完成登录验证
 		if user.TOTPEnabled {
 			return true
 		}
-		// 未绑定 2FA 且跳过了安全初始化，无法进行登录验证
-		if user.BootstrapSkipped {
-			return false
-		}
-		return true
+		// 未绑定 2FA 的管理员不要求登录验证
+		return false
 	}
 	// 普通用户未设置邮箱且未启用 2FA 时不进入邮箱二段登录，否则会因没有收件地址而卡住登录。
 	if strings.TrimSpace(user.Email) == "" && !user.TOTPEnabled {
