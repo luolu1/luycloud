@@ -4,49 +4,50 @@ import "time"
 
 // VPCSwitch 用户逻辑交换机配置。
 type VPCSwitch struct {
-	ID                         uint      `json:"id" gorm:"primaryKey"`
-	Username                   string    `json:"username" gorm:"index;not null;size:64"`
-	IsSystem                   bool      `json:"is_system" gorm:"default:false"`
-	Name                       string    `json:"name" gorm:"index;not null;size:64"`
-	BridgeName                 string    `json:"bridge_name" gorm:"not null;default:br-ovs;size:64"`
-	BridgeMode                 string    `json:"bridge_mode" gorm:"not null;default:nat;size:16"`
-	DHCPEnabled                bool      `json:"dhcp_enabled" gorm:"default:false"`
-	UplinkMode                 string    `json:"uplink_mode" gorm:"not null;default:none;size:16"`
-	UplinkIF                   string    `json:"uplink_if" gorm:"size:64"`
-	UplinkGateway              string    `json:"uplink_gateway" gorm:"size:64"`
-	OwnsBridge                 bool      `json:"owns_bridge" gorm:"default:false"`
-	MigrateHostIP              bool      `json:"migrate_host_ip" gorm:"default:false"`
-	HostAddrs                  string    `json:"-" gorm:"size:512"`
-	HostGateway                string    `json:"-" gorm:"size:64"`
-	HostMetric                 string    `json:"-" gorm:"size:16"`
-	HostDNS                    string    `json:"-" gorm:"size:512"`
-	LegacyMigrationRequired    bool      `json:"legacy_migration_required" gorm:"default:false"`
-	BridgeVLANID               int       `json:"bridge_vlan_id" gorm:"default:0"`
-	AllowPromiscuous           bool      `json:"allow_promiscuous" gorm:"default:false"`
-	AllowMACChange             bool      `json:"allow_mac_change" gorm:"default:false"`
-	AllowForgedTransmits       bool      `json:"allow_forged_transmits" gorm:"default:false"`
-	IPv6SecurityEnabled        bool      `json:"ipv6_security_enabled" gorm:"default:false"`
-	TrustedIPv6Prefixes        string    `json:"trusted_ipv6_prefixes" gorm:"type:text"`
-	VLANID                     int       `json:"vlan_id" gorm:"uniqueIndex;not null"`
-	CIDR                       string    `json:"cidr" gorm:"column:cidr;size:32"`
-	GatewayIP                  string    `json:"gateway_ip" gorm:"not null;size:45"`
-	DHCPStart                  string    `json:"dhcp_start" gorm:"not null;size:45"`
-	DHCPEnd                    string    `json:"dhcp_end" gorm:"not null;size:45"`
-	TrafficDownGB              float64   `json:"traffic_down_gb" gorm:"default:0"`
-	TrafficUpGB                float64   `json:"traffic_up_gb" gorm:"default:0"`
-	BandwidthMbps              int       `json:"bandwidth_mbps" gorm:"default:0"` // 兼容旧版单总带宽字段
-	BandwidthDownMbps          int       `json:"bandwidth_down_mbps" gorm:"default:0"`
-	BandwidthUpMbps            int       `json:"bandwidth_up_mbps" gorm:"default:0"`
-	UsedTrafficDown            int64     `json:"used_traffic_down" gorm:"-"`
-	UsedTrafficUp              int64     `json:"used_traffic_up" gorm:"-"`
-	UsedTrafficDownGB          string    `json:"used_traffic_down_gb" gorm:"-"`
-	UsedTrafficUpGB            string    `json:"used_traffic_up_gb" gorm:"-"`
-	IsLimitedDown              bool      `json:"is_limited_down" gorm:"-"`
-	IsLimitedUp                bool      `json:"is_limited_up" gorm:"-"`
-	EffectiveBandwidthDownMbps int       `json:"effective_bandwidth_down_mbps" gorm:"-"`
-	EffectiveBandwidthUpMbps   int       `json:"effective_bandwidth_up_mbps" gorm:"-"`
-	CreatedAt                  time.Time `json:"created_at"`
-	UpdatedAt                  time.Time `json:"updated_at"`
+	ID                         uint                     `json:"id" gorm:"primaryKey"`
+	Username                   string                   `json:"username" gorm:"index;not null;size:64"`
+	IsSystem                   bool                     `json:"is_system" gorm:"default:false"`
+	Name                       string                   `json:"name" gorm:"index;not null;size:64"`
+	BridgeName                 string                   `json:"bridge_name" gorm:"not null;default:br-ovs;size:64"`
+	BridgeMode                 string                   `json:"bridge_mode" gorm:"not null;default:nat;size:16"`
+	DHCPEnabled                bool                     `json:"dhcp_enabled" gorm:"default:false"`
+	UplinkMode                 string                   `json:"uplink_mode" gorm:"not null;default:none;size:16"`
+	UplinkIF                   string                   `json:"uplink_if" gorm:"size:64"`
+	UplinkGateway              string                   `json:"uplink_gateway" gorm:"size:64"`
+	AccessAddresses            []VPCSwitchAccessAddress `json:"access_addresses" gorm:"serializer:json;type:text"`
+	OwnsBridge                 bool                     `json:"owns_bridge" gorm:"default:false"`
+	MigrateHostIP              bool                     `json:"migrate_host_ip" gorm:"default:false"`
+	HostAddrs                  string                   `json:"-" gorm:"size:512"`
+	HostGateway                string                   `json:"-" gorm:"size:64"`
+	HostMetric                 string                   `json:"-" gorm:"size:16"`
+	HostDNS                    string                   `json:"-" gorm:"size:512"`
+	LegacyMigrationRequired    bool                     `json:"legacy_migration_required" gorm:"default:false"`
+	BridgeVLANID               int                      `json:"bridge_vlan_id" gorm:"default:0"`
+	AllowPromiscuous           bool                     `json:"allow_promiscuous" gorm:"default:false"`
+	AllowMACChange             bool                     `json:"allow_mac_change" gorm:"default:false"`
+	AllowForgedTransmits       bool                     `json:"allow_forged_transmits" gorm:"default:false"`
+	IPv6SecurityEnabled        bool                     `json:"ipv6_security_enabled" gorm:"default:false"`
+	TrustedIPv6Prefixes        string                   `json:"trusted_ipv6_prefixes" gorm:"type:text"`
+	VLANID                     int                      `json:"vlan_id" gorm:"uniqueIndex;not null"`
+	CIDR                       string                   `json:"cidr" gorm:"column:cidr;size:32"`
+	GatewayIP                  string                   `json:"gateway_ip" gorm:"not null;size:45"`
+	DHCPStart                  string                   `json:"dhcp_start" gorm:"not null;size:45"`
+	DHCPEnd                    string                   `json:"dhcp_end" gorm:"not null;size:45"`
+	TrafficDownGB              float64                  `json:"traffic_down_gb" gorm:"default:0"`
+	TrafficUpGB                float64                  `json:"traffic_up_gb" gorm:"default:0"`
+	BandwidthMbps              int                      `json:"bandwidth_mbps" gorm:"default:0"` // 兼容旧版单总带宽字段
+	BandwidthDownMbps          int                      `json:"bandwidth_down_mbps" gorm:"default:0"`
+	BandwidthUpMbps            int                      `json:"bandwidth_up_mbps" gorm:"default:0"`
+	UsedTrafficDown            int64                    `json:"used_traffic_down" gorm:"-"`
+	UsedTrafficUp              int64                    `json:"used_traffic_up" gorm:"-"`
+	UsedTrafficDownGB          string                   `json:"used_traffic_down_gb" gorm:"-"`
+	UsedTrafficUpGB            string                   `json:"used_traffic_up_gb" gorm:"-"`
+	IsLimitedDown              bool                     `json:"is_limited_down" gorm:"-"`
+	IsLimitedUp                bool                     `json:"is_limited_up" gorm:"-"`
+	EffectiveBandwidthDownMbps int                      `json:"effective_bandwidth_down_mbps" gorm:"-"`
+	EffectiveBandwidthUpMbps   int                      `json:"effective_bandwidth_up_mbps" gorm:"-"`
+	CreatedAt                  time.Time                `json:"created_at"`
+	UpdatedAt                  time.Time                `json:"updated_at"`
 }
 
 func (VPCSwitch) TableName() string {
@@ -129,4 +130,10 @@ type VPCSwitchTrafficMonthly struct {
 
 func (VPCSwitchTrafficMonthly) TableName() string {
 	return "vpc_switch_traffic_monthlies"
+}
+
+// VPCSwitchAccessAddress 交换机的一个对外访问地址（描述 + IP/域名），用于端口转发展示完整访问地址。
+type VPCSwitchAccessAddress struct {
+	Label string `json:"label"`
+	Host  string `json:"host"`
 }

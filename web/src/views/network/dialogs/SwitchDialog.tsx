@@ -3,7 +3,8 @@
  * 交换机直接管理零或一个物理上行；普通用户通过“开启互联网”使用管理员预设出口。
  */
 import { useEffect, useMemo, useState } from 'react'
-import { Collapse, Input, InputNumber, Modal, Select, Switch, TextArea, Toast } from '@douyinfe/semi-ui'
+import { Button, Collapse, Input, InputNumber, Modal, Select, Switch, TextArea, Toast, Tooltip } from '@douyinfe/semi-ui'
+import { IconDelete, IconPlus } from '@douyinfe/semi-icons'
 import type { HostInterface } from '@/api/network'
 import {
   createVPCSwitch,
@@ -11,6 +12,7 @@ import {
   updateVPCSwitch,
   type VpcQuota,
   type VpcSwitch,
+  type VpcSwitchAccessAddress,
   type VpcSwitchPayload,
 } from '@/api/vpc'
 import { getUserList, type UserListItem } from '@/api/user'
@@ -50,6 +52,7 @@ interface SwitchFormState {
   traffic_up_gb: number
   bandwidth_down_mbps: number
   bandwidth_up_mbps: number
+  access_addresses: VpcSwitchAccessAddress[]
 }
 
 function quotaRange(quota: VpcQuota | null, maxField: keyof VpcQuota, remainingField: keyof VpcQuota, editing: boolean) {
@@ -57,6 +60,56 @@ function quotaRange(quota: VpcQuota | null, maxField: keyof VpcQuota, remainingF
   const remaining = Number(quota?.[remainingField]) || 0
   const defaultVal = max > 0 ? remaining : 0
   return { min: editing ? -defaultVal : 0, max: max > 0 ? remaining : 999999, defaultVal }
+}
+
+function AccessAddressEditor({
+  value,
+  onChange,
+}: {
+  value: VpcSwitchAccessAddress[]
+  onChange: (value: VpcSwitchAccessAddress[]) => void
+}) {
+  const update = (index: number, patchItem: Partial<VpcSwitchAccessAddress>) =>
+    onChange(value.map((item, i) => (i === index ? { ...item, ...patchItem } : item)))
+  return (
+    <div className="qvm-form-item">
+      <div className="qvm-form-label">访问地址</div>
+      {value.map((item, index) => (
+        <div key={index} className="net-access-addr-row">
+          <Input
+            style={{ width: 120 }}
+            value={item.label}
+            onChange={(v) => update(index, { label: v })}
+            placeholder="描述，如 公网"
+          />
+          <Input
+            style={{ flex: 1 }}
+            value={item.host}
+            onChange={(v) => update(index, { host: v })}
+            placeholder="IP 地址或域名，如 cnix.com"
+          />
+          <Tooltip content="删除" position="top">
+            <Button
+              theme="borderless"
+              type="danger"
+              icon={<IconDelete />}
+              onClick={() => onChange(value.filter((_, i) => i !== index))}
+            />
+          </Tooltip>
+        </div>
+      ))}
+      <Button
+        size="small"
+        theme="light"
+        icon={<IconPlus />}
+        disabled={value.length >= 10}
+        onClick={() => onChange([...value, { label: '', host: '' }])}
+      >
+        添加访问地址
+      </Button>
+      <div className="qvm-form-tip">端口转发列表会按这里的地址显示完整访问地址；不配置时显示宿主机默认 IP。</div>
+    </div>
+  )
 }
 
 function SecuritySwitchRow({
@@ -128,6 +181,7 @@ export default function SwitchDialog({
       traffic_up_gb: row ? row.traffic_up_gb ?? 0 : trafficUp.defaultVal,
       bandwidth_down_mbps: row ? row.bandwidth_down_mbps ?? legacyBandwidth : bandwidthDown.defaultVal,
       bandwidth_up_mbps: row ? row.bandwidth_up_mbps ?? legacyBandwidth : bandwidthUp.defaultVal,
+      access_addresses: row?.access_addresses || [],
     }
   })
 
@@ -144,6 +198,7 @@ export default function SwitchDialog({
   const hasPhysicalUplink = isAdmin && !!form.uplink_if
   const isManaged = isAdmin ? hasPhysicalUplink && form.dhcp_enabled : form.internet_enabled
   const isPhysicalDirect = hasPhysicalUplink && !form.dhcp_enabled
+  const isSystemSwitch = !!row?.is_system
   const modeText = isManaged ? '内置 DHCP/NAT' : isPhysicalDirect ? '物理直通' : '空交换机'
 
   const uplinkOptions = useMemo(
@@ -198,6 +253,7 @@ export default function SwitchDialog({
     bandwidth_mbps: 0,
     bandwidth_down_mbps: form.bandwidth_down_mbps,
     bandwidth_up_mbps: form.bandwidth_up_mbps,
+    access_addresses: cleanAccessAddresses(form.access_addresses),
   })
 
   const topologyChanged = (payload: VpcSwitchPayload) => {
@@ -220,9 +276,31 @@ export default function SwitchDialog({
       managedFieldsChanged
   }
 
+  const cleanAccessAddresses = (items: VpcSwitchAccessAddress[]) =>
+    items
+      .map((item) => ({ label: item.label.trim(), host: item.host.trim() }))
+      .filter((item) => item.label || item.host)
+
   const handleSubmit = async () => {
     if (!form.name.trim()) {
       Toast.warning('请输入交换机名称')
+      return
+    }
+    if (isSystemSwitch && row) {
+      setSubmitting(true)
+      try {
+        await updateVPCSwitch(row.id, {
+          name: form.name.trim(),
+          access_addresses: cleanAccessAddresses(form.access_addresses),
+        })
+        Toast.success('基础网络已更新')
+        onSaved()
+        requestClose()
+      } catch {
+        // 请求层已提示
+      } finally {
+        setSubmitting(false)
+      }
       return
     }
     const managedFields = [form.cidr, form.gateway_ip, form.dhcp_start, form.dhcp_end].map((value) => value.trim())
@@ -270,6 +348,7 @@ export default function SwitchDialog({
           allow_forged_transmits: payload.allow_forged_transmits,
           ipv6_security_enabled: payload.ipv6_security_enabled,
           trusted_ipv6_prefixes: payload.trusted_ipv6_prefixes,
+          access_addresses: payload.access_addresses,
         })
         if (topologyChanged(payload)) {
           const response = await reconfigureVPCSwitch(row.id, payload)
@@ -296,12 +375,25 @@ export default function SwitchDialog({
       afterClose={afterModalClose}
       onCancel={requestClose}
       onOk={() => void handleSubmit()}
-      okText={editing && topologyChanged(buildPayload()) ? '提交重配置' : '保存'}
+      okText={editing && !isSystemSwitch && topologyChanged(buildPayload()) ? '提交重配置' : '保存'}
       cancelText="取消"
       confirmLoading={submitting}
       width={860}
       closeOnEsc
     >
+      {isSystemSwitch ? (
+        <>
+          <div className="qvm-form-item">
+            <div className="qvm-form-label required">名称</div>
+            <Input value={form.name} onChange={(value) => patch({ name: value })} placeholder="请输入交换机名称" />
+          </div>
+          <AccessAddressEditor value={form.access_addresses} onChange={(value) => patch({ access_addresses: value })} />
+          <div className="net-switch-inline-note">
+            系统基础网络的网段 {row?.cidr || '—'}、网关 {row?.gateway_ip || '—'} 与 DHCP 由系统维护，跟随系统设置中的子网前缀，这里只能修改名称和访问地址。
+          </div>
+        </>
+      ) : (
+      <>
       <div className="net-switch-mode-banner">
         <span>当前模式</span>
         <strong>{modeText}</strong>
@@ -338,6 +430,7 @@ export default function SwitchDialog({
                 <div className="qvm-form-label required">名称</div>
                 <Input value={form.name} onChange={(value) => patch({ name: value })} placeholder="请输入交换机名称" />
               </div>
+              <AccessAddressEditor value={form.access_addresses} onChange={(value) => patch({ access_addresses: value })} />
               {isAdmin ? (
                 <>
                   <div className="qvm-form-item">
@@ -528,6 +621,8 @@ export default function SwitchDialog({
           )}
         </div>
       </div>
+      </>
+      )}
     </Modal>
   )
 }

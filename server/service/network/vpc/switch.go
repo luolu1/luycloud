@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
+	"regexp"
 	"strings"
 
 	"kvm_console/config"
@@ -104,6 +105,10 @@ func CreateVPCSwitch(operator, role string, req VPCSwitchRequest) (*model.VPCSwi
 	if ownsBridge && bridgeMode == BridgeModeDirect && req.MigrateHostIP && req.UplinkIF != "" && HookCaptureHostIPConfig != nil {
 		hostAddrs, hostGateway, hostMetric, hostDNS = HookCaptureHostIPConfig(req.UplinkIF)
 	}
+	accessAddresses, err := normalizeSwitchAccessAddresses(req.AccessAddresses)
+	if err != nil {
+		return nil, err
+	}
 	sw := &model.VPCSwitch{
 		Username:             username,
 		Name:                 req.Name,
@@ -113,6 +118,7 @@ func CreateVPCSwitch(operator, role string, req VPCSwitchRequest) (*model.VPCSwi
 		UplinkMode:           req.UplinkMode,
 		UplinkIF:             req.UplinkIF,
 		UplinkGateway:        strings.TrimSpace(req.UplinkGateway),
+		AccessAddresses:      accessAddresses,
 		OwnsBridge:           ownsBridge,
 		MigrateHostIP:        ownsBridge && bridgeMode == BridgeModeDirect && req.MigrateHostIP,
 		HostAddrs:            hostAddrs,
@@ -162,7 +168,7 @@ func UpdateVPCSwitch(operator, role string, id uint, req VPCSwitchRequest) (*mod
 		return nil, fmt.Errorf("交换机不存在")
 	}
 	if sw.IsSystem {
-		return nil, fmt.Errorf("系统基础网络交换机不可编辑")
+		return updateSystemBaseNetworkSwitch(role, sw, req)
 	}
 	if role != "admin" && sw.Username != operator {
 		return nil, fmt.Errorf("无权操作此交换机")
@@ -219,6 +225,13 @@ func UpdateVPCSwitch(operator, role string, id uint, req VPCSwitchRequest) (*mod
 	sw.BandwidthMbps = req.BandwidthMbps
 	sw.BandwidthDownMbps = req.BandwidthDownMbps
 	sw.BandwidthUpMbps = req.BandwidthUpMbps
+	if req.AccessAddresses != nil {
+		addresses, err := normalizeSwitchAccessAddresses(req.AccessAddresses)
+		if err != nil {
+			return nil, err
+		}
+		sw.AccessAddresses = addresses
+	}
 	if err := checkSwitchResourceQuota(sw.Username, sw.ID, req); err != nil {
 		return nil, err
 	}
@@ -238,6 +251,38 @@ func UpdateVPCSwitch(operator, role string, id uint, req VPCSwitchRequest) (*mod
 	if HookTriggerPortSecurityReconcile != nil {
 		HookTriggerPortSecurityReconcile()
 	}
+	return &sw, nil
+}
+
+// updateSystemBaseNetworkSwitch 编辑系统基础网络交换机。
+// 网段、网关与 DHCP 跟随 KVM_SUBNET_PREFIX 由系统维护，这里只允许管理员修改显示名称和访问地址。
+func updateSystemBaseNetworkSwitch(role string, sw model.VPCSwitch, req VPCSwitchRequest) (*model.VPCSwitch, error) {
+	if role != "admin" {
+		return nil, fmt.Errorf("仅管理员可编辑系统基础网络")
+	}
+	name := normalizeVPCName(req.Name)
+	if name == "" {
+		return nil, fmt.Errorf("交换机名称不能为空")
+	}
+	changed := false
+	if name != sw.Name {
+		sw.Name = name
+		changed = true
+	}
+	if req.AccessAddresses != nil {
+		addresses, err := normalizeSwitchAccessAddresses(req.AccessAddresses)
+		if err != nil {
+			return nil, err
+		}
+		sw.AccessAddresses = addresses
+		changed = true
+	}
+	if changed {
+		if err := model.DB.Model(&sw).Select("name", "access_addresses").Updates(&sw).Error; err != nil {
+			return nil, err
+		}
+	}
+	fillVPCSwitchUsageForResponse(&sw)
 	return &sw, nil
 }
 
@@ -678,3 +723,31 @@ func getHostNetworkCIDR() string {
 	}
 	return prefix.Masked().String()
 }
+
+// normalizeSwitchAccessAddresses 去除空白项，校验描述与 IP/域名，最多 10 条。
+func normalizeSwitchAccessAddresses(items []model.VPCSwitchAccessAddress) ([]model.VPCSwitchAccessAddress, error) {
+	result := make([]model.VPCSwitchAccessAddress, 0, len(items))
+	for _, item := range items {
+		label := strings.TrimSpace(item.Label)
+		host := strings.TrimSpace(item.Host)
+		if label == "" && host == "" {
+			continue
+		}
+		if host == "" {
+			return nil, fmt.Errorf("访问地址「%s」缺少 IP 地址或域名", label)
+		}
+		if len(label) > 32 || len(host) > 253 {
+			return nil, fmt.Errorf("访问地址描述最长 32 字符，IP/域名最长 253 字符")
+		}
+		if net.ParseIP(host) == nil && !accessHostPattern.MatchString(host) {
+			return nil, fmt.Errorf("访问地址 %s 不是有效的 IP 地址或域名", host)
+		}
+		result = append(result, model.VPCSwitchAccessAddress{Label: label, Host: host})
+	}
+	if len(result) > 10 {
+		return nil, fmt.Errorf("每个交换机最多配置 10 个访问地址")
+	}
+	return result, nil
+}
+
+var accessHostPattern = regexp.MustCompile(`^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$`)

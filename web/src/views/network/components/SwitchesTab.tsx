@@ -277,7 +277,7 @@ export default function SwitchesTab({
               clickToHide
               render={
                 <Dropdown.Menu>
-                  <Dropdown.Item icon={<IconEditStroked />} disabled={row.is_system || operating} onClick={() => onEdit(row)}>
+                  <Dropdown.Item icon={<IconEditStroked />} disabled={operating} onClick={() => onEdit(row)}>
                     编辑
                   </Dropdown.Item>
                   {isAdmin && row.legacy_migration_required && (
@@ -297,7 +297,7 @@ export default function SwitchesTab({
                 </Dropdown.Menu>
               }
             >
-              <span className={`qvm-act-ic more ${row.is_system ? 'disabled' : ''}`}>
+              <span className="qvm-act-ic more">
                 {operating ? <IconRefresh spin /> : <IconMore />}
               </span>
             </Dropdown>

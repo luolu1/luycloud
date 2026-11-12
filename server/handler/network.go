@@ -206,10 +206,13 @@ func GetPortForwardList(c *gin.Context) {
 		rules = filtered
 	}
 
+	merged := netservice.MergePortForwardRules(rules)
+	netservice.FillPortForwardAccessAddresses(merged)
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
 		"message": "ok",
-		"data":    rules,
+		"data":    merged,
 	})
 }
 

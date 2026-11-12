@@ -333,9 +333,12 @@ export default function PortForwardPanel({ vmName, shared, live, liveTick }: Por
 
   // ============ 区域限制开关 ============
   const handleFirewallToggle = async (row: PortForwardRule, enabled: boolean) => {
-    if (!row.firewall_key) return
+    const keys = row.firewall_keys?.length ? row.firewall_keys : row.firewall_key ? [row.firewall_key] : []
+    if (keys.length === 0) return
     try {
-      await setPortForwardFirewall({ key: row.firewall_key, exempt: !enabled })
+      for (const key of keys) {
+        await setPortForwardFirewall({ key, exempt: !enabled })
+      }
       Toast.success(enabled ? '已继承入站区域限制' : '已豁免入站区域限制')
       void fetchRules()
     } catch {
@@ -361,27 +364,41 @@ export default function PortForwardPanel({ vmName, shared, live, liveTick }: Por
     {
       title: '协议',
       dataIndex: 'protocol',
-      width: 70,
-      render: (text) => <span className="qvm-mono">{String(text || '').toUpperCase()}</span>,
+      width: 90,
+      render: (text) => (
+        <span className="qvm-mono">{String(text || '').toLowerCase() === 'both' ? 'TCP+UDP' : String(text || '').toUpperCase()}</span>
+      ),
     },
     { title: '宿主机端口', dataIndex: 'host_port', width: 100, render: (text) => <span className="qvm-mono">{text}</span> },
     {
       title: '完整访问地址',
       dataIndex: 'access_address',
-      render: (_text, row) => (
-        <span className="qvm-forward-addr">
-          <span className="qvm-mono qvm-ellipsis">{row.access_address || '-'}</span>
-          <Tooltip content="复制完整访问地址" position="top">
-            <Button
-              size="small"
-              theme="borderless"
-              icon={<IconCopy size="small" />}
-              disabled={!row.access_address}
-              onClick={() => void copyAccessAddress(row.access_address)}
-            />
-          </Tooltip>
-        </span>
-      ),
+      render: (_text, row) => {
+        const items = row.access_addresses?.length
+          ? row.access_addresses.map((item) => ({ label: item.label, address: item.address }))
+          : [{ label: '', address: row.access_address || '' }]
+        return (
+          <div className="qvm-forward-addr-list">
+            {items.map((item, index) => (
+              <span key={`${item.address}-${index}`} className="qvm-forward-addr">
+                <span className="qvm-mono qvm-ellipsis">
+                  {item.label ? `${item.label}：` : ''}
+                  {item.address || '-'}
+                </span>
+                <Tooltip content="复制完整访问地址" position="top">
+                  <Button
+                    size="small"
+                    theme="borderless"
+                    icon={<IconCopy size="small" />}
+                    disabled={!item.address}
+                    onClick={() => void copyAccessAddress(item.address)}
+                  />
+                </Tooltip>
+              </span>
+            ))}
+          </div>
+        )
+      },
     },
     { title: '目标 IP', dataIndex: 'dest_ip', width: 120, render: (text) => <span className="qvm-mono">{text}</span> },
     { title: '目标端口', dataIndex: 'dest_port', width: 90, render: (text) => <span className="qvm-mono">{text}</span> },
@@ -529,18 +546,11 @@ export default function PortForwardPanel({ vmName, shared, live, liveTick }: Por
             style={{ width: '100%' }}
             value={form.protocol}
             onChange={(v) => setForm((f) => ({ ...f, protocol: String(v) }))}
-            optionList={
-              form.id !== null
-                ? [
-                    { value: 'tcp', label: 'TCP' },
-                    { value: 'udp', label: 'UDP' },
-                  ]
-                : [
-                    { value: 'tcp', label: 'TCP' },
-                    { value: 'udp', label: 'UDP' },
-                    { value: 'both', label: 'TCP+UDP' },
-                  ]
-            }
+            optionList={[
+              { value: 'tcp', label: 'TCP' },
+              { value: 'udp', label: 'UDP' },
+              { value: 'both', label: 'TCP+UDP' },
+            ]}
           />
         </div>
         <div className="qvm-form-item">

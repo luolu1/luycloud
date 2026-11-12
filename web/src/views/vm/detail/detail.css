@@ -1018,3 +1018,9 @@ body[theme-mode='dark'] .qvm-ip-detail {
     bottom: 72px;
   }
 }
+
+.qvm-forward-addr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

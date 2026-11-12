@@ -148,15 +148,24 @@ func buildPortForwardAvailabilityExcludeSet(hostPort string, protocols []string,
 		return nil
 	}
 
-	currentProtocol := strings.ToLower(strings.TrimSpace(currentRule.Protocol))
+	currentProtocols, err := normalizePortForwardProtocols(currentRule.Protocol)
+	if err != nil {
+		return nil
+	}
+	exclude := make(map[string]struct{})
 	for _, protocol := range protocols {
-		if protocol == currentProtocol {
-			return map[string]struct{}{
-				currentRule.StableKey(): {},
+		for _, currentProtocol := range currentProtocols {
+			if protocol == currentProtocol {
+				rule := *currentRule
+				rule.Protocol = currentProtocol
+				exclude[rule.StableKey()] = struct{}{}
 			}
 		}
 	}
-	return nil
+	if len(exclude) == 0 {
+		return nil
+	}
+	return exclude
 }
 
 func canBindHostPort(protocol string, port int) bool {

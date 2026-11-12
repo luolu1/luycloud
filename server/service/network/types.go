@@ -40,6 +40,9 @@ type PortForwardRule struct {
 	RegionFilterEnabled   bool   `json:"region_filter_enabled"`   // 是否继承入站区域限制
 	RegionFilterInherited bool   `json:"region_filter_inherited"` // 是否继承全局入站策略
 	RuleKey               string `json:"rule_key"`                // 稳定规则标识
+
+	FirewallKeys    []string                   `json:"firewall_keys,omitempty"`    // TCP+UDP 合并规则的底层防火墙豁免标识
+	AccessAddresses []PortForwardAccessAddress `json:"access_addresses,omitempty"` // 交换机配置的带描述访问地址
 }
 
 // APIKey 返回供 API 更新和删除使用的稳定标识。

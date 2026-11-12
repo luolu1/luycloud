@@ -683,3 +683,10 @@ body[theme-mode='dark'] .net-switch-inline-note {
     gap: 4px;
   }
 }
+
+.net-access-addr-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}

@@ -7,6 +7,11 @@ import type { ApiResponse } from '@/types/api'
 
 // ==================== 类型定义 ====================
 
+export interface VpcSwitchAccessAddress {
+  label: string
+  host: string
+}
+
 /** VPC 交换机 */
 export interface VpcSwitch {
   id: number
@@ -19,6 +24,7 @@ export interface VpcSwitch {
   uplink_mode: 'none' | 'physical' | 'system'
   uplink_if: string
   uplink_gateway: string
+  access_addresses: VpcSwitchAccessAddress[]
   owns_bridge: boolean
   migrate_host_ip: boolean
   legacy_migration_required: boolean
@@ -57,6 +63,7 @@ export interface VpcSwitchPayload {
   uplink_mode?: 'none' | 'physical' | 'system'
   uplink_if?: string
   uplink_gateway?: string
+  access_addresses?: VpcSwitchAccessAddress[]
   migrate_host_ip?: boolean
   bridge_name?: string
   bridge_vlan_id?: number

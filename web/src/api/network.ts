@@ -49,19 +49,27 @@ export function unbindStaticIP(data: { vm_name: string; ip: string }) {
 
 // ==================== 端口转发 ====================
 
+export interface PortForwardAccessAddress {
+  label: string
+  address: string
+}
+
 /** 端口转发规则 */
 export interface PortForwardRule {
   id: string
   rule_key: string
   vm_name: string
-  protocol: string // tcp / udp
+  protocol: string // tcp / udp / both
   host_port: string
+  listen_ip?: string
   dest_ip: string
   dest_port: string
-  source_ip?: string // 入站 IP 白名单（CIDR，0.0.0.0/0 = 不限制）
+  source_ip?: string
   access_ip?: string
   access_address?: string
   firewall_key?: string
+  firewall_keys?: string[]
+  access_addresses?: PortForwardAccessAddress[]
   region_filter_enabled?: boolean
 }
 

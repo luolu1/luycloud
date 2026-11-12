@@ -14,30 +14,31 @@ const (
 )
 
 type VPCSwitchRequest struct {
-	Username            string  `json:"username"`
-	Name                string  `json:"name"`
-	BridgeName          string  `json:"bridge_name"`
-	DHCPEnabled         bool    `json:"dhcp_enabled"`
-	InternetEnabled     *bool   `json:"internet_enabled,omitempty"` // 普通用户仅提交开关，物理出口由系统设置决定
-	UplinkMode          string  `json:"uplink_mode"`
-	UplinkIF            string  `json:"uplink_if"`
-	UplinkGateway       string  `json:"uplink_gateway"` // 自动检测不到默认路由时使用的物理出口网关
-	MigrateHostIP       bool    `json:"migrate_host_ip"`
-	BridgeVLANID        int     `json:"bridge_vlan_id"`
-	AllowPromiscuous    bool    `json:"allow_promiscuous"`
-	AllowMACChange      bool    `json:"allow_mac_change"`
-	AllowForgedTx       bool    `json:"allow_forged_transmits"`
-	IPv6SecurityEnabled bool    `json:"ipv6_security_enabled"`
-	TrustedIPv6Prefixes string  `json:"trusted_ipv6_prefixes"`
-	CIDR                string  `json:"cidr"`       // 自定义网段（如 10.0.1.0/24），留空则自动分配
-	GatewayIP           string  `json:"gateway_ip"` // 自定义网关地址，留空则自动计算（CIDR 内第一个可用 IP）
-	DHCPStart           string  `json:"dhcp_start"` // DHCP 起始地址，留空则自动计算
-	DHCPEnd             string  `json:"dhcp_end"`   // DHCP 结束地址，留空则自动计算
-	TrafficDownGB       float64 `json:"traffic_down_gb"`
-	TrafficUpGB         float64 `json:"traffic_up_gb"`
-	BandwidthMbps       int     `json:"bandwidth_mbps"` // 兼容旧版字段，传入时同时作为上下行默认值
-	BandwidthDownMbps   int     `json:"bandwidth_down_mbps"`
-	BandwidthUpMbps     int     `json:"bandwidth_up_mbps"`
+	Username            string                         `json:"username"`
+	Name                string                         `json:"name"`
+	BridgeName          string                         `json:"bridge_name"`
+	DHCPEnabled         bool                           `json:"dhcp_enabled"`
+	InternetEnabled     *bool                          `json:"internet_enabled,omitempty"` // 普通用户仅提交开关，物理出口由系统设置决定
+	UplinkMode          string                         `json:"uplink_mode"`
+	UplinkIF            string                         `json:"uplink_if"`
+	UplinkGateway       string                         `json:"uplink_gateway"`
+	AccessAddresses     []model.VPCSwitchAccessAddress `json:"access_addresses"`
+	MigrateHostIP       bool                           `json:"migrate_host_ip"`
+	BridgeVLANID        int                            `json:"bridge_vlan_id"`
+	AllowPromiscuous    bool                           `json:"allow_promiscuous"`
+	AllowMACChange      bool                           `json:"allow_mac_change"`
+	AllowForgedTx       bool                           `json:"allow_forged_transmits"`
+	IPv6SecurityEnabled bool                           `json:"ipv6_security_enabled"`
+	TrustedIPv6Prefixes string                         `json:"trusted_ipv6_prefixes"`
+	CIDR                string                         `json:"cidr"`       // 自定义网段（如 10.0.1.0/24），留空则自动分配
+	GatewayIP           string                         `json:"gateway_ip"` // 自定义网关地址，留空则自动计算（CIDR 内第一个可用 IP）
+	DHCPStart           string                         `json:"dhcp_start"` // DHCP 起始地址，留空则自动计算
+	DHCPEnd             string                         `json:"dhcp_end"`   // DHCP 结束地址，留空则自动计算
+	TrafficDownGB       float64                        `json:"traffic_down_gb"`
+	TrafficUpGB         float64                        `json:"traffic_up_gb"`
+	BandwidthMbps       int                            `json:"bandwidth_mbps"` // 兼容旧版字段，传入时同时作为上下行默认值
+	BandwidthDownMbps   int                            `json:"bandwidth_down_mbps"`
+	BandwidthUpMbps     int                            `json:"bandwidth_up_mbps"`
 }
 
 type VPCSecurityGroupRequest struct {
