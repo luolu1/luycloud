@@ -101,6 +101,29 @@ detect_existing_install() {
     [ -x "${INSTALL_DIR}/kvm-console" ] || [ -f "$SERVICE_FILE" ]
 }
 
+# ---------- 运行依赖（管理脚本 qvmc-manage.sh 需要 sqlite3 与 python3-bcrypt） ----------
+ensure_runtime_deps() {
+    local missing=0
+    command -v sqlite3 >/dev/null 2>&1 || missing=1
+    command -v python3 >/dev/null 2>&1 || missing=1
+    python3 -c 'import bcrypt' >/dev/null 2>&1 || missing=1
+    if [ "$missing" -eq 0 ]; then
+        info "运行依赖已就绪（sqlite3 / python3-bcrypt）"
+        return 0
+    fi
+    warn "缺少管理脚本运行依赖，尝试自动安装 sqlite3 / python3-bcrypt..."
+    if command -v apt-get >/dev/null 2>&1; then
+        apt-get update -y || true
+        DEBIAN_FRONTEND=noninteractive apt-get install -y sqlite3 python3 python3-bcrypt || warn "依赖安装失败，请手动执行: apt-get install -y sqlite3 python3-bcrypt"
+    elif command -v dnf >/dev/null 2>&1; then
+        dnf install -y sqlite python3 python3-bcrypt || warn "依赖安装失败，请手动执行: dnf install -y sqlite python3-bcrypt"
+    elif command -v yum >/dev/null 2>&1; then
+        yum install -y sqlite python3 python3-bcrypt || warn "依赖安装失败，请手动执行: yum install -y sqlite python3-bcrypt"
+    else
+        warn "未识别包管理器，请手动安装 sqlite3 与 python3-bcrypt（管理脚本 luycloud-manage 依赖）"
+    fi
+}
+
 # ---------- 下载封装 ----------
 # fetch_url URL OUTFILE  —— 下载到文件（进度条）
 fetch_url() {
@@ -400,6 +423,7 @@ main() {
         exit 1
     fi
 
+    ensure_runtime_deps
     configure_mirror
     download_release
     apply_update

@@ -1,15 +1,21 @@
 # 开发环境依赖安装指南
 
-本文档说明如何安装 QVMConsole 开发所需的所有依赖。
+本文档说明如何安装 luycloud 开发所需的所有依赖。
 
 ## 环境要求
 
 | 依赖 | 最低版本 | 用途 |
 |------|---------|------|
-| Go | 1.22+ | 后端开发语言 |
-| Node.js | 22.22+ | 前端构建工具链（React Router 8 要求） |
+| Go | 1.26+ | 后端开发语言 |
+| Node.js | 20+ | 前端构建工具链 |
 | npm | 9+ | 前端包管理 |
 | air | 1.61.7 | Go 热重载开发工具 |
+| gcc / make | - | 编译依赖（后端 go-sqlite3 需要 CGO） |
+| libc 开发头文件 | - | 编译依赖（Debian/Ubuntu: libc6-dev；RHEL: glibc-devel） |
+| sqlite3 CLI | - | 管理脚本 qvmc-manage.sh 运行依赖 |
+| python3-bcrypt | - | 管理脚本密码哈希校验依赖 |
+
+**一键部署脚本 `luycloud-deploy.sh` 和更新脚本 `update.sh` 会自动检测并安装上述编译与运行依赖。**
 
 ## Windows 安装步骤
 

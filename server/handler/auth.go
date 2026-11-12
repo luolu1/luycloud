@@ -276,27 +276,6 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if service.CanEnterBootstrap(&user) {
-		token, err := middleware.GenerateTokenWithContext(c, user.ID, user.Username, user.Role, service.TokenTypeBootstrap, 30*time.Minute)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "生成引导令牌失败"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code":    200,
-			"message": "请先完成安全初始化",
-			"data": LoginStageResponse{
-				Stage:     "bootstrap_security",
-				Token:     token,
-				Username:  user.Username,
-				Role:      user.Role,
-				CloudType: service.NormalizeCloudType(user.CloudType),
-				Security:  security,
-			},
-		})
-		return
-	}
-
 	if service.NeedsLoginVerification(&user) {
 		token, err := middleware.GenerateTokenWithContext(c, user.ID, user.Username, user.Role, service.TokenTypeLogin, 15*time.Minute)
 		if err != nil {
@@ -1024,21 +1003,6 @@ func CompleteInvite(c *gin.Context) {
 	user, err := service.CompleteInviteRegistration(req.Token, req.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
-		return
-	}
-	if config.GlobalConfig.PublicAccessEnabled && user.Role == "admin" && service.CanEnterBootstrap(user) {
-		bootstrapToken, tokenErr := middleware.GenerateTokenWithContext(c, user.ID, user.Username, user.Role, service.TokenTypeBootstrap, 30*time.Minute)
-		if tokenErr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "注册成功，但生成安全初始化令牌失败"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"code": 200, "message": "注册完成，请先绑定邮箱并启用 2FA",
-			"data": LoginStageResponse{
-				Stage: "bootstrap_security", Token: bootstrapToken, Username: user.Username,
-				Role: user.Role, CloudType: service.NormalizeCloudType(user.CloudType), Security: service.BuildSecurityState(user),
-			},
-		})
 		return
 	}
 	accessToken, err := middleware.GenerateAccessTokenWithContext(c, user.ID, user.Username, user.Role)

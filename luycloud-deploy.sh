@@ -223,6 +223,53 @@ ensure_git() {
     success "git 已安装"
 }
 
+# ---------- 确保编译与运行依赖 ----------
+# 后端依赖 go-sqlite3（CGO），编译需要 gcc 与 C 标准库头文件；
+# 管理脚本 qvmc-manage.sh 运行需要 sqlite3 与 python3-bcrypt。
+ensure_build_deps() {
+    detect_pkg_mgr
+    local missing=()
+    command -v gcc >/dev/null 2>&1 || missing+=("gcc")
+    command -v make >/dev/null 2>&1 || missing+=("make")
+    command -v sqlite3 >/dev/null 2>&1 || missing+=("sqlite3")
+    command -v python3 >/dev/null 2>&1 || missing+=("python3")
+    if ! python3 -c 'import bcrypt' >/dev/null 2>&1; then
+        missing+=("python3-bcrypt")
+    fi
+    if [ ! -f /usr/include/stdio.h ]; then
+        missing+=("libc-dev")
+    fi
+    if [ "${#missing[@]}" -eq 0 ]; then
+        info "编译与运行依赖已就绪（gcc / libc 头文件 / sqlite3 / python3-bcrypt）"
+        return 0
+    fi
+
+    warn "缺少依赖: ${missing[*]}，尝试自动安装..."
+    local pkgs=()
+    case "$PKG_MGR" in
+        apt)
+            pkgs=(gcc make libc6-dev sqlite3 python3 python3-bcrypt)
+            ;;
+        dnf|yum)
+            pkgs=(gcc make glibc-devel sqlite python3 python3-bcrypt)
+            ;;
+        *)
+            error "无法自动安装依赖（未识别包管理器），请手动安装: gcc make libc 开发头文件 sqlite3 python3-bcrypt"
+            exit 1
+            ;;
+    esac
+    pkg_update_index || true
+    if ! pkg_install "${pkgs[@]}"; then
+        error "依赖安装失败，请手动安装: ${pkgs[*]}"
+        exit 1
+    fi
+    if ! command -v gcc >/dev/null 2>&1; then
+        error "gcc 安装后仍不可用，无法进行 CGO 编译"
+        exit 1
+    fi
+    success "编译与运行依赖已安装"
+}
+
 # ---------- 确保 Go ----------
 # 返回 0 表示满足版本，非 0 表示不满足
 go_version_ok() {
@@ -409,6 +456,7 @@ build_release() {
 run_install() {
     configure_mirror
     ensure_git
+    ensure_build_deps
     ensure_go
     ensure_node
     sync_source

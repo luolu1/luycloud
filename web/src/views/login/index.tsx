@@ -3,7 +3,6 @@
  * 多阶段登录已全部接入：
  * - 账号密码登录（stage=success）
  * - 强制修改默认密码（force_password_change）
- * - 安全初始化（bootstrap_security：SMTP / 绑定邮箱 / 绑定 2FA / 管理员跳过）
  * - 登录二次验证（login_verify：2FA 动态码 / 恢复码 / 邮箱验证码）
  * 待后续迭代：邀请注册
  */
@@ -29,7 +28,6 @@ import { LOGIN_STAGES, CLOUD_TYPES, LOGO_URL, type CloudType } from '@/config/co
 import { applyDocumentTitle } from '@/config/site'
 import ForgotPasswordModal from './ForgotPasswordModal'
 import ForcePasswordModal from './ForcePasswordModal'
-import BootstrapSecurityPanel, { type BootstrapStageInfo } from './BootstrapSecurityPanel'
 import LoginVerifyPanel, { type LoginVerifyStageInfo } from './LoginVerifyPanel'
 import loginBgDark from '@/assets/img/login-bg.png'
 import loginBgLight from '@/assets/img/login-bg-light.png'
@@ -69,8 +67,6 @@ export default function LoginPage() {
   const [forgotVisible, setForgotVisible] = useState(false)
   // 强制修改默认密码弹窗（暂存账号与登录密码，改密成功后自动重新登录）
   const [forcePwd, setForcePwd] = useState({ visible: false, username: '', password: '', reason: '' })
-  // 安全初始化阶段（bootstrap_security：SMTP / 绑定邮箱 / 绑定 2FA）
-  const [bootstrap, setBootstrap] = useState<BootstrapStageInfo | null>(null)
   // 登录二次验证阶段（login_verify：2FA / 恢复码 / 邮箱验证码）
   const [loginVerify, setLoginVerify] = useState<LoginVerifyStageInfo | null>(null)
 
@@ -137,16 +133,6 @@ export default function LoginPage() {
           security: data.security,
           allowedMethods: data.allowed_methods || [],
           password: values.password,
-        })
-        return
-      }
-      if (data.stage === LOGIN_STAGES.bootstrapSecurity && data.token) {
-        // 安全初始化：切换到引导面板（bootstrap 令牌 30 分钟有效）
-        setBootstrap({
-          token: data.token,
-          username: data.username,
-          role: data.role,
-          security: data.security,
         })
         return
       }
@@ -255,7 +241,7 @@ export default function LoginPage() {
         ))}
       </section>
 
-      {/* ============ 右侧登录卡片 / 安全初始化 / 登录验证面板 ============ */}
+      {/* ============ 右侧登录卡片 / 登录验证面板 ============ */}
       <section className="qvm-login-side">
         {loginVerify ? (
           <LoginVerifyPanel
@@ -274,15 +260,6 @@ export default function LoginPage() {
                 })
                 return
               }
-              applySession(data)
-            }}
-          />
-        ) : bootstrap ? (
-          <BootstrapSecurityPanel
-            stage={bootstrap}
-            onExit={() => setBootstrap(null)}
-            onComplete={(data) => {
-              setBootstrap(null)
               applySession(data)
             }}
           />

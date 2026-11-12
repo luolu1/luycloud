@@ -209,7 +209,7 @@ export const fieldDescriptions: Record<string, string> = {
   source_cidr: '来源 CIDR。',
   source_ip: '入站 IP 白名单（IPv4/CIDR，0.0.0.0/0 表示不限制）。',
   source_path: '源文件路径。',
-  stage: '登录阶段，可能为 success、login_verify 或 bootstrap_security。',
+  stage: '登录阶段，可能为 success 或 login_verify。',
   start: '查询开始时间。',
   status: '资源状态。',
   storage_pool_id: '存储池 ID。',
@@ -250,7 +250,7 @@ export const fieldDescriptions: Record<string, string> = {
 export const ignoredFieldTokens = new Set([
   'JSON', 'FormData', 'Content', 'Type', 'application', 'json', 'multipart', 'form', 'data',
   'true', 'false', 'null', 'tcp', 'udp', 'icmp', 'icmpv6', 'all', 'ipv4', 'ipv6', 'GET', 'POST', 'PUT', 'DELETE',
-  'success', 'login_verify', 'bootstrap_security', 'node', 'off', 'balanced',
+  'success', 'login_verify', 'node', 'off', 'balanced',
   'kvm', 'qemu', 'x86_64', 'aarch64', 'riscv64', 'q35', 'i440fx',
   'virtio', 'scsi', 'sata', 'ide', 'raw', 'qcow2', 'bool', 'str',
 ])

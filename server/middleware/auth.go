@@ -271,7 +271,8 @@ func tokenTypeMiddleware(allowAPIKey bool, allowedTypes ...string) gin.HandlerFu
 			c.Abort()
 			return
 		}
-		if user.SecurityUpdatedAt != nil && claims.IssuedAt != nil && claims.IssuedAt.Time.Before(*user.SecurityUpdatedAt) {
+		// JWT iat 只精确到秒，安全时间戳需按秒截断比较，否则改密后同一秒内签发的新令牌会被误判失效。
+		if user.SecurityUpdatedAt != nil && claims.IssuedAt != nil && claims.IssuedAt.Time.Before(user.SecurityUpdatedAt.Truncate(time.Second)) {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"code":    401,
 				"message": "登录状态已失效，请重新登录",

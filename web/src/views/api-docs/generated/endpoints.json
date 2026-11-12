@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-26T13:17:41.806Z",
-  "count": 342,
+  "generated_at": "2026-11-12T07:50:55.557Z",
+  "count": 348,
   "endpoints": [
     {
       "method": "POST",
@@ -1808,6 +1808,39 @@
     },
     {
       "method": "GET",
+      "path": "/self/vm/recycle",
+      "handler": "SelfGetVmRecycleList",
+      "auth": "jwt",
+      "admin": false,
+      "elasticOnly": true,
+      "vmAccess": false,
+      "highRisk": "",
+      "comment": "我的回收站列表"
+    },
+    {
+      "method": "POST",
+      "path": "/self/vm/recycle/:id/purge",
+      "handler": "PurgeVmRecycle",
+      "auth": "jwt",
+      "admin": false,
+      "elasticOnly": true,
+      "vmAccess": false,
+      "highRisk": "purge_vm",
+      "comment": "永久清除我的回收站虚拟机"
+    },
+    {
+      "method": "POST",
+      "path": "/self/vm/recycle/:id/restore",
+      "handler": "RestoreVmRecycle",
+      "auth": "jwt",
+      "admin": false,
+      "elasticOnly": true,
+      "vmAccess": false,
+      "highRisk": "restore_vm",
+      "comment": "恢复我的回收站虚拟机"
+    },
+    {
+      "method": "GET",
       "path": "/self/vms",
       "handler": "GetSelfVMs",
       "auth": "jwt",
@@ -3565,6 +3598,39 @@
       "vmAccess": true,
       "highRisk": "",
       "comment": ""
+    },
+    {
+      "method": "GET",
+      "path": "/vm/recycle",
+      "handler": "GetVmRecycleList",
+      "auth": "jwt",
+      "admin": false,
+      "elasticOnly": false,
+      "vmAccess": true,
+      "highRisk": "",
+      "comment": "回收站列表"
+    },
+    {
+      "method": "POST",
+      "path": "/vm/recycle/:id/purge",
+      "handler": "PurgeVmRecycle",
+      "auth": "jwt",
+      "admin": false,
+      "elasticOnly": false,
+      "vmAccess": true,
+      "highRisk": "purge_vm",
+      "comment": "永久清除"
+    },
+    {
+      "method": "POST",
+      "path": "/vm/recycle/:id/restore",
+      "handler": "RestoreVmRecycle",
+      "auth": "jwt",
+      "admin": false,
+      "elasticOnly": false,
+      "vmAccess": true,
+      "highRisk": "restore_vm",
+      "comment": "从回收站恢复"
     },
     {
       "method": "GET",

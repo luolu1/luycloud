@@ -49,7 +49,6 @@ export const ROLES = {
 /** 登录返回的阶段标识（多阶段登录流程） */
 export const LOGIN_STAGES = {
   success: 'success',
-  bootstrapSecurity: 'bootstrap_security',
   loginVerify: 'login_verify',
 } as const
 export type LoginStage = (typeof LOGIN_STAGES)[keyof typeof LOGIN_STAGES]

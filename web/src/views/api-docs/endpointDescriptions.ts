@@ -84,7 +84,7 @@ export const endpointDescriptions: Record<string, EndpointDescription> = {
 
   // ==================== 认证与账户安全 ====================
   'POST /auth/login': {
-    summary: '登录并进入 success/login_verify/bootstrap_security 阶段',
+    summary: '登录并进入 success 或 login_verify 阶段',
     body: 'JSON: username, password',
     response: 'data: stage, token, username, role, cloud_type, security, allowed_methods。',
     requiredFields: ['username', 'password'],

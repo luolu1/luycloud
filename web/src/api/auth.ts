@@ -126,7 +126,7 @@ function withStageToken(stageToken?: string) {
   return stageToken ? { headers: { Authorization: `Bearer ${stageToken}` } } : {}
 }
 
-/** 用户登录（可能返回多阶段状态：success / bootstrap_security / login_verify） */
+/** 用户登录（可能返回多阶段状态：success / login_verify） */
 export function login(data: LoginRequest) {
   return service.post<unknown, ApiResponse<LoginStageResponse>>('/auth/login', data)
 }
